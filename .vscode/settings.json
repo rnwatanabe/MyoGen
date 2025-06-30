@@ -1,0 +1,22 @@
+{
+    "python.analysis.typeCheckingMode": "basic",
+    "terminal.integrated.env.linux": {
+        "PYTHONPATH": "${workspaceFolder}"
+    },
+    "terminal.integrated.env.windows": {
+        "PYTHONPATH": "${workspaceFolder};C:/nrn/lib/python"
+    },
+    "python.analysis.extraPaths": [
+        "${workspaceFolder}",
+        "C:/nrn/lib/python"
+    ],
+    "python.autoComplete.extraPaths": [
+        "${workspaceFolder}",
+        "C:/nrn/lib/python"
+    ],
+    "python.analysis.autoImportCompletions": true,
+    "editor.fontFamily": "fira-code-nerd, FiraCode Nerd Font, Consolas, 'Courier New', monospace",
+    "editor.fontLigatures": true,
+    "editor.fontSize": 14,
+    "svg.preview.background": "dark-transparent"
+}
