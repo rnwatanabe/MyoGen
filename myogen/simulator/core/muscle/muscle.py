@@ -79,9 +79,50 @@ class Muscle:
     A muscle model for simulating motor unit organization and muscle fiber distribution.
 
     The muscle model consists of:
-    - Motor unit territories with biologically realistic size distributions
-    - Spatially distributed innervation centers using optimal packing algorithms
-    - Muscle fiber assignment based on proximity and self-avoidance principles
+        - Motor unit territories with biologically realistic size distributions
+        - Spatially distributed innervation centers using optimal packing algorithms
+        - Muscle fiber assignment based on proximity and self-avoidance principles
+
+    Parameters
+    ----------
+    recruitment_thresholds : np.ndarray
+        Array of recruitment thresholds for each motor unit. The values
+        determine the relative sizes of motor unit territories, with larger
+        values corresponding to larger territories. Typically ranges from
+        -1 to 1, with the largest motor units having thresholds near 1.
+    radius__mm : float, default 4.9
+        Radius of the muscle cross-section in millimeters. Default value
+        corresponds to the First Dorsal Interosseous (FDI) muscle based
+        on anatomical measurements (Jacobson et al., 1992).
+    fiber_density__fibers_per_mm2 : float, default 400
+        Density of muscle fibers per square millimeter. This parameter
+        controls the total number of muscle fibers in the muscle and
+        affects the granularity of the simulation. Values typically
+        range from 300-600 fibers/mm² for human muscles.
+    max_innervation_area_to_total_muscle_area__ratio : float, default 0.25
+        Ratio defining the maximum territory size relative to total muscle area.
+        A value of 0.25 means the largest motor unit can innervate up to 25%
+        of the total muscle cross-sectional area. Must be in range (0, 1].
+    grid_resolution : int, default 256
+        Resolution of the computational grid used for innervation electrode_grid_center
+        distribution. Higher values provide more accurate spatial distribution
+        but increase computational cost. Recommended range: 128-512.
+    autorun : bool, default False
+        If True, automatically executes the complete muscle simulation pipeline:
+        innervation electrode_grid_center distribution, muscle fiber generation, and fiber-to-
+        motor unit assignment. If False, these steps must be called manually.
+    
+    Raises
+    ------
+    ValueError
+        If max_innervation_area_to_total_muscle_area__ratio is not in (0, 1].
+
+    Notes
+    -----
+    The muscle model uses a circular cross-section approximation, which is
+    appropriate for many skeletal muscles. The recruitment thresholds are
+    used as a proxy for motor unit sizes, following the size principle
+    where larger motor units have higher recruitment thresholds.
 
     Examples
     --------
@@ -109,51 +150,6 @@ class Muscle:
         grid_resolution: int = 256,
         autorun: bool = False,
     ):
-        """
-        Initialize the muscle simulation with specified parameters.
-
-        Parameters
-        ----------
-        recruitment_thresholds : np.ndarray
-            Array of recruitment thresholds for each motor unit. The values
-            determine the relative sizes of motor unit territories, with larger
-            values corresponding to larger territories. Typically ranges from
-            0 to 1, with the largest motor units having thresholds near 1.
-        radius__mm : float, default 4.9
-            Radius of the muscle cross-section in millimeters. Default value
-            corresponds to the First Dorsal Interosseous (FDI) muscle based
-            on anatomical measurements (Jacobson et al., 1992).
-        fiber_density__fibers_per_mm2 : float, default 400
-            Density of muscle fibers per square millimeter. This parameter
-            controls the total number of muscle fibers in the muscle and
-            affects the granularity of the simulation. Values typically
-            range from 300-600 fibers/mm² for human muscles.
-            Default value is 400 fibers/mm².
-        max_innervation_area_to_total_muscle_area__ratio : float, default 0.25
-            Ratio defining the maximum territory size relative to total muscle area.
-            A value of 0.25 means the largest motor unit can innervate up to 25%
-            of the total muscle cross-sectional area. Must be in range (0, 1].
-        grid_resolution : int, default 256
-            Resolution of the computational grid used for innervation electrode_grid_center
-            distribution. Higher values provide more accurate spatial distribution
-            but increase computational cost. Recommended range: 128-512.
-        autorun : bool, default False
-            If True, automatically executes the complete muscle simulation pipeline:
-            innervation electrode_grid_center distribution, muscle fiber generation, and fiber-to-
-            motor unit assignment. If False, these steps must be called manually.
-
-        Raises
-        ------
-        ValueError
-            If max_innervation_area_to_total_muscle_area__ratio is not in (0, 1].
-
-        Notes
-        -----
-        The muscle model uses a circular cross-section approximation, which is
-        appropriate for many skeletal muscles. The recruitment thresholds are
-        used as a proxy for motor unit sizes, following the size principle
-        where larger motor units have higher recruitment thresholds.
-        """
         self.recruitment_thresholds = recruitment_thresholds
         self._number_of_neurons = len(recruitment_thresholds)
         self.radius__mm = radius__mm
@@ -280,9 +276,9 @@ class Muscle:
         -------
         None
             Results are stored in the following attributes:
-            - self.mf_centers: Array of shape (n_fibers, 2) with fiber positions [x, y] in mm
-            - self.number_of_muscle_fibers: Total number of muscle fibers
-            - self.muscle_border: Array of border points for visualization
+                - self.mf_centers: Array of shape (n_fibers, 2) with fiber positions [x, y] in mm
+                - self.number_of_muscle_fibers: Total number of muscle fibers
+                - self.muscle_border: Array of border points for visualization
 
         Notes
         -----
@@ -336,11 +332,12 @@ class Muscle:
         Assign muscle fibers to motor neurons using biologically realistic principles.
 
         This method implements an assignment algorithm that balances
+        
         multiple biological constraints:
-        1. Proximity: Fibers closer to innervation centers are more likely to be assigned
-        2. Territory size: Each motor unit has a target number of fibers based on its size
-        3. Self-avoidance: Neighboring fibers avoid belonging to the same motor unit
-        4. Gaussian territories: Fiber territories follow roughly Gaussian distributions
+            1. Proximity: Fibers closer to innervation centers are more likely to be assigned
+            2. Territory size: Each motor unit has a target number of fibers based on its size
+            3. Self-avoidance: Neighboring fibers avoid belonging to the same motor unit
+            4. Gaussian territories: Fiber territories follow roughly Gaussian distributions
 
         The assignment uses a probabilistic approach where each fiber is assigned
         based on the posterior probability computed from prior probabilities (target

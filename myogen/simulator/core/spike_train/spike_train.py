@@ -180,27 +180,30 @@ class MotorNeuronPool:
             Mean of the noise current in nA
         noise_stdev__nA : float
             Standard deviation of the noise current in nA
-        what_to_record: list[dict[Literal["variables", "to_file",  "sampling_interval", "locations"], Any]]
-            List of dictionaries specifying what to record
-            Each dictionary contains the following keys:
-            - variables: list of strings specifying the variables to record
-            - to_file: bool specifying whether to save the recorded data to a file
-            - sampling_interval: int specifying the sampling interval in ms
-            - locations: list of strings specifying the locations to record from
+        what_to_record: WhatToRecord
+            List of dictionaries specifying what to record.
 
-            See pyNN documentation for more details: https://pynn.readthedocs.io/en/stable/recording.html
+            Each dictionary contains the following keys:
+                - variables: list of strings specifying the variables to record
+                - to_file: bool specifying whether to save the recorded data to a file
+                - sampling_interval: int specifying the sampling interval in ms
+                - locations: list of strings specifying the locations to record from
+
+            See pyNN documentation for more details: https://pynn.readthedocs.io/en/stable/recording.html.
 
             Spike trains are recorded by default.
 
         Returns
         -------
-        spike_trains: SPIKE_TRAIN__MATRIX
+        spike_trains : SPIKE_TRAIN__MATRIX
             Matrix of shape (n_pools, neurons_per_pool, t_points) containing spike trains
             Each row represents the spike train for one pool
             Each column represents the spike train for one neuron
             Each element represents whether the neuron spiked at that time point
-        active_neuron_indices: list[np.ndarray]
+        active_neuron_indices : list[np.ndarray]
             List of arrays of indices of the active neurons in each pool
+        data : list[neo.core.segment.Segment]
+            List of neo segments containing the recorded data
         """
         self.timestep__ms = timestep__ms
         sim.setup(timestep=self.timestep__ms)

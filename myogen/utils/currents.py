@@ -28,26 +28,26 @@ def create_sinusoidal_current(
         Time step in milliseconds
     amplitudes__muV : float | list[float]
         Amplitude(s) of the sinusoidal current(s) in microvolts.
-        Must be:
 
+        Must be:
             - Single float: used for all pools
             - List of floats: must match n_pools
     frequencies__Hz : float | list[float]
         Frequency(s) of the sinusoidal current(s) in Hertz.
-        Must be:
 
+        Must be:
             - Single float: used for all pools
             - List of floats: must match n_pools
     offsets__muV : float | list[float]
         DC offset(s) to add to the sinusoidal current(s) in microvolts.
-        Must be:
 
+        Must be:
             - Single float: used for all pools
             - List of floats: must match n_pools
     phases__rad : float | list[float]
         Phase(s) of the sinusoidal current(s) in radians.
-        Must be:
 
+        Must be:
             - Single float: used for all pools
             - List of floats: must match n_pools
 
@@ -137,32 +137,36 @@ def create_sawtooth_current(
         Time step in milliseconds
     amplitudes__muV : float | list[float]
         Amplitude(s) of the sawtooth current(s) in microvolts.
-        Must be:
 
+        Must be:
             - Single float: used for all pools
             - List of floats: must match n_pools
+
     frequencies__Hz : float | list[float]
         Frequency(s) of the sawtooth current(s) in Hertz.
-        Must be:
 
+        Must be:
             - Single float: used for all pools
             - List of floats: must match n_pools
+
     offsets__muV : float | list[float]
         DC offset(s) to add to the sawtooth current(s) in microvolts.
-        Must be:
 
+        Must be:
             - Single float: used for all pools
             - List of floats: must match n_pools
+
     widths : float | list[float]
         Width(s) of the rising edge as proportion of period (0 to 1).
-        Must be:
 
+        Must be:
             - Single float: used for all pools
             - List of floats: must match n_pools
+
     phases__rad : float | list[float]
         Phase(s) of the sawtooth current(s) in radians.
-        Must be:
 
+        Must be:
             - Single float: used for all pools
             - List of floats: must match n_pools
 
@@ -260,20 +264,20 @@ def create_step_current(
         Time step in milliseconds.
     step_heights__muV : float | list[float]
         Step height(s) for the current(s) in microvolts.
+        
         Must be:
-
             - Single float: used for all pools
             - List of floats: must match n_pools
     step_durations__ms : float | list[float]
         Step duration(s) in milliseconds.
+        
         Must be:
-
             - Single float: used for all pools
             - List of floats: must match n_pools
     offsets__muV : float | list[float]
         DC offset(s) to add to the step current(s) in microvolts.
+        
         Must be:
-
             - Single float: used for all pools
             - List of floats: must match n_pools
 
@@ -352,22 +356,25 @@ def create_ramp_current(
         Number of time points
     start_currents__muV : float | list[float]
         Starting current(s) for the ramp in microvolts.
-        Must be:
 
+        Must be:
             - Single float: used for all pools
             - List of floats: must match n_pools
+
     end_currents__muV : float | list[float]
         Ending current(s) for the ramp in microvolts.
-        Must be:
 
+        Must be:
             - Single float: used for all pools
             - List of floats: must match n_pools
+
     offsets__muV : float | list[float]
         DC offset(s) to add to the ramp current(s) in microvolts.
-        Must be:
 
+        Must be:
             - Single float: used for all pools
             - List of floats: must match n_pools
+
 
     Raises
     ------
@@ -443,38 +450,41 @@ def create_trapezoid_current(
         Time step in milliseconds
     amplitudes__muV : float | list[float]
         Amplitude(s) of the trapezoidal current(s) in microvolts.
-        Must be:
 
+        Must be:
             - Single float: used for all pools
             - List of floats: must match n_pools
+
     rise_times__ms : float | list[float]
         Duration(s) of the rising phase in milliseconds.
-        Must be:
 
+        Must be:
             - Single float: used for all pools
             - List of floats: must match n_pools
+
     plateau_times__ms : float | list[float]
         Duration(s) of the plateau phase in milliseconds.
-        Must be:
 
+        Must be:
             - Single float: used for all pools
             - List of floats: must match n_pools
+
     fall_times__ms : float | list[float]
         Duration(s) of the falling phase in milliseconds.
-        Must be:
 
+        Must be:
             - Single float: used for all pools
             - List of floats: must match n_pools
     offsets__muV : float | list[float]
         DC offset(s) to add to the trapezoidal current(s) in microvolts.
-        Must be:
 
+        Must be:
             - Single float: used for all pools
             - List of floats: must match n_pools
     delays__ms : float | list[float]
         Delay(s) before starting the trapezoid in milliseconds.
-        Must be:
 
+        Must be:
             - Single float: used for all pools
             - List of floats: must match n_pools
 
