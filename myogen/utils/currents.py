@@ -264,19 +264,19 @@ def create_step_current(
         Time step in milliseconds.
     step_heights__muV : float | list[float]
         Step height(s) for the current(s) in microvolts.
-        
+
         Must be:
             - Single float: used for all pools
             - List of floats: must match n_pools
     step_durations__ms : float | list[float]
         Step duration(s) in milliseconds.
-        
+
         Must be:
             - Single float: used for all pools
             - List of floats: must match n_pools
     offsets__muV : float | list[float]
         DC offset(s) to add to the step current(s) in microvolts.
-        
+
         Must be:
             - Single float: used for all pools
             - List of floats: must match n_pools

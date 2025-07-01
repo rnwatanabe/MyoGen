@@ -157,7 +157,7 @@ def plot_surface_emg(
     """
     axs_list = list(axs)
     n_pools = surface_emg__tensor.shape[0]
-    
+
     if len(axs_list) != n_pools:
         raise ValueError(
             f"Number of axes must match number of pools. Got {len(axs_list)} axes, but {n_pools} pools."
@@ -168,7 +168,7 @@ def plot_surface_emg(
 
     for pool_idx, pool_axes in enumerate(axs_list):
         # Handle the case where pool_axes is a single axis or array of axes
-        if hasattr(pool_axes, 'flat') and not isinstance(pool_axes, Axes):
+        if hasattr(pool_axes, "flat") and not isinstance(pool_axes, Axes):
             # pool_axes is a 2D array of axes
             axes_flat: Any = pool_axes.flat
         elif isinstance(pool_axes, Axes):
@@ -183,16 +183,19 @@ def plot_surface_emg(
                 electrode_idx = row_idx * n_cols + col_idx
                 if electrode_idx < len(axes_flat):
                     ax = axes_flat[electrode_idx]
-                    
+
                     plot_kwargs = kwargs.copy() if not apply_default_formatting else {}
-                    
+
                     if apply_default_formatting:
                         ax.plot(surface_emg__tensor[pool_idx, row_idx, col_idx])
                         ax.set_title(f"Pool {pool_idx + 1} - R{row_idx} C{col_idx}")
                         ax.set_xlabel("Time (samples)")
                         ax.set_ylabel("Amplitude")
                     else:
-                        ax.plot(surface_emg__tensor[pool_idx, row_idx, col_idx], **plot_kwargs)
+                        ax.plot(
+                            surface_emg__tensor[pool_idx, row_idx, col_idx],
+                            **plot_kwargs,
+                        )
 
     return axs
 
@@ -271,9 +274,9 @@ def plot_muap_grid(
     # Plot each requested MUAP
     for i, muap_idx in enumerate(tqdm(muap_indices, desc="Plotting MUAPs")):
         muap_axes = axs_list[i]
-        
+
         # Handle the case where muap_axes is a single axis or array of axes
-        if hasattr(muap_axes, 'flat') and not isinstance(muap_axes, Axes):
+        if hasattr(muap_axes, "flat") and not isinstance(muap_axes, Axes):
             # muap_axes is a 2D array of axes
             axes_flat: Any = muap_axes.flat
         elif isinstance(muap_axes, Axes):
@@ -295,14 +298,14 @@ def plot_muap_grid(
                     ax = axes_flat[electrode_idx]
 
                     plot_kwargs = kwargs.copy() if not apply_default_formatting else {}
-                    
+
                     if apply_default_formatting:
                         # Plot MUAP waveform
                         ax.plot(muap_data[muap_idx, row_idx, col_idx])
-                        
+
                         # Set consistent y-limits across all electrodes
                         ax.set_ylim(muap_min, muap_max)
-                        
+
                         # Clean up axes for better visualization
                         ax.set_xticks([])
                         ax.set_yticks([])

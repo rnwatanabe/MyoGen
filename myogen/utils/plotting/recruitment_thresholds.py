@@ -25,7 +25,7 @@ def plot_recruitment_thresholds(
     markers: Optional[Union[str, list]] = None,
     linestyles: Optional[Union[str, list]] = None,
     apply_default_formatting: bool = True,
-    **kwargs: Any
+    **kwargs: Any,
 ) -> IterableType[Axes]:
     """
     Plot recruitment thresholds for one or multiple parameter sets.
@@ -56,7 +56,7 @@ def plot_recruitment_thresholds(
     -------
     IterableType[Axes]
         The axes that were plotted on
-        
+
     Raises
     ------
     ValueError
@@ -70,14 +70,24 @@ def plot_recruitment_thresholds(
     warnings.filterwarnings("ignore", message=".*findfont.*")
 
     axs_list = list(axs)
-    
+
     # Determine if we're plotting single or multiple datasets
     if isinstance(thresholds, dict):
         # Multiple lines plot - use first axis or require one axis per dataset
         if len(axs_list) == 1:
             # Plot all datasets on the same axis
             ax = axs_list[0]
-            _plot_multiple_datasets(ax, thresholds, colors, markers, linestyles, y_max, apply_default_formatting, model_name, **kwargs)
+            _plot_multiple_datasets(
+                ax,
+                thresholds,
+                colors,
+                markers,
+                linestyles,
+                y_max,
+                apply_default_formatting,
+                model_name,
+                **kwargs,
+            )
         else:
             # Plot each dataset on separate axes
             if len(axs_list) != len(thresholds):
@@ -86,21 +96,59 @@ def plot_recruitment_thresholds(
                 )
             for ax, (param, dataset) in zip(axs_list, thresholds.items()):
                 single_data = {param: dataset}
-                _plot_multiple_datasets(ax, single_data, colors, markers, linestyles, y_max, apply_default_formatting, f"{model_name} - {param}" if model_name else str(param), **kwargs)
+                _plot_multiple_datasets(
+                    ax,
+                    single_data,
+                    colors,
+                    markers,
+                    linestyles,
+                    y_max,
+                    apply_default_formatting,
+                    f"{model_name} - {param}" if model_name else str(param),
+                    **kwargs,
+                )
     else:
         # Single line plot - use first axis
         if len(axs_list) == 0:
             raise ValueError("At least one axis must be provided")
         ax = axs_list[0]
-        _plot_single_dataset(ax, thresholds, colors, markers, linestyles, y_max, apply_default_formatting, model_name, **kwargs)
+        _plot_single_dataset(
+            ax,
+            thresholds,
+            colors,
+            markers,
+            linestyles,
+            y_max,
+            apply_default_formatting,
+            model_name,
+            **kwargs,
+        )
 
     return axs
 
 
-def _plot_multiple_datasets(ax: Axes, data: Dict[Union[str, int, float], np.ndarray], colors, markers, linestyles, y_max, apply_default_formatting, model_name, **kwargs):
+def _plot_multiple_datasets(
+    ax: Axes,
+    data: Dict[Union[str, int, float], np.ndarray],
+    colors,
+    markers,
+    linestyles,
+    y_max,
+    apply_default_formatting,
+    model_name,
+    **kwargs,
+):
     """Helper function to plot multiple datasets on a single axis."""
     if colors is None:
-        colors = ["blue", "navy", "royalblue", "steelblue", "green", "darkgreen", "forestgreen"]
+        colors = [
+            "blue",
+            "navy",
+            "royalblue",
+            "steelblue",
+            "green",
+            "darkgreen",
+            "forestgreen",
+        ]
     if markers is None:
         markers = ["^", "s", "D", "o", "v", "<", ">"]
     if linestyles is None:
@@ -113,7 +161,7 @@ def _plot_multiple_datasets(ax: Axes, data: Dict[Union[str, int, float], np.ndar
         times = np.concatenate([times[::2], times[-1:]])
 
         plot_kwargs = kwargs.copy() if not apply_default_formatting else {}
-        
+
         if apply_default_formatting:
             ax.plot(
                 times,
@@ -133,7 +181,7 @@ def _plot_multiple_datasets(ax: Axes, data: Dict[Union[str, int, float], np.ndar
         else:
             ax.plot(times, rt, **plot_kwargs)
             ax.scatter(times, rt, label=f"slope={param}", **plot_kwargs)
-        
+
         y_values.extend(rt)
 
     if y_max is None:
@@ -143,15 +191,25 @@ def _plot_multiple_datasets(ax: Axes, data: Dict[Union[str, int, float], np.ndar
         _apply_default_formatting(ax, data, y_max, model_name, is_multiple=True)
 
 
-def _plot_single_dataset(ax: Axes, data: np.ndarray, colors, markers, linestyles, y_max, apply_default_formatting, model_name, **kwargs):
+def _plot_single_dataset(
+    ax: Axes,
+    data: np.ndarray,
+    colors,
+    markers,
+    linestyles,
+    y_max,
+    apply_default_formatting,
+    model_name,
+    **kwargs,
+):
     """Helper function to plot a single dataset."""
     rt = data
-    
+
     if apply_default_formatting:
         color = colors or "red"
         marker = markers or "o"
         linestyle = linestyles or "-"
-        
+
         ax.plot(
             rt,
             color=color,
@@ -183,14 +241,16 @@ def _apply_default_formatting(ax: Axes, data, y_max, model_name, is_multiple: bo
     if is_multiple and isinstance(data, dict):
         y_min = min([np.min(rt) for rt in data.values()])
     else:
-        y_min = np.min(data) if not is_multiple else min([np.min(rt) for rt in data.values()])
+        y_min = (
+            np.min(data)
+            if not is_multiple
+            else min([np.min(rt) for rt in data.values()])
+        )
 
     ax.set_yticks(
         [y_min, y_max / 2, y_max],
     )
-    ax.set_yticklabels(
-        [f"min={y_min:.3f}", f"mid={y_max / 2:.2f}", f"max={y_max:.2f}"]
-    )
+    ax.set_yticklabels([f"min={y_min:.3f}", f"mid={y_max / 2:.2f}", f"max={y_max:.2f}"])
 
     # Remove legend box
     legend = ax.legend()

@@ -106,7 +106,7 @@ def _compile_mod_files_windows(nmodl_path: Path) -> None:
     original_dir = os.getcwd()
     try:
         os.chdir(nmodl_path)
-        
+
         # Remove any existing DLL files to avoid conflicts
         for dll_file in nmodl_path.glob("*nrnmech.dll"):
             try:
@@ -114,17 +114,17 @@ def _compile_mod_files_windows(nmodl_path: Path) -> None:
                 print(f"Removed existing DLL: {dll_file.name}")
             except Exception as e:
                 print(f"Warning: Could not remove {dll_file.name}: {e}")
-        
+
         # On Windows, we need to use cmd.exe to run batch files
         cmd = ["cmd", "/c", str(mknrndll_path)]
         print(f"Running command: {' '.join(cmd)}")
         result = subprocess.run(cmd, capture_output=True, text=True, check=True)
         print(result.stdout)
-        
+
         # Check if stderr has any warnings (not necessarily errors)
         if result.stderr:
             print(f"Compilation warnings/info: {result.stderr}")
-            
+
     except subprocess.CalledProcessError as e:
         print(f"Error during compilation: {e.stderr}")
         print(f"Stdout: {e.stdout}")
@@ -163,7 +163,7 @@ def _compile_and_load_mod_files(nmodl_path: Path, mod_files: List[Path]) -> None
         # On Windows, NEURON creates a DLL file, but the name might have a prefix
         # Look for both 'nrnmech.dll' and '*.nrnmech.dll' patterns
         dll_files = list(nmodl_path.glob("*nrnmech.dll"))
-        
+
         if dll_files:
             # Use the first DLL found (usually there should be only one)
             dll_path = dll_files[0]
@@ -177,7 +177,9 @@ def _compile_and_load_mod_files(nmodl_path: Path, mod_files: List[Path]) -> None
                 )
                 # Continue execution - don't re-raise the exception
         else:
-            print(f"Warning: No nrnmech.dll file was found after compilation in {nmodl_path}")
+            print(
+                f"Warning: No nrnmech.dll file was found after compilation in {nmodl_path}"
+            )
             print("Available files:")
             for item in nmodl_path.iterdir():
                 if item.is_file():
@@ -200,20 +202,21 @@ def _compile_and_load_mod_files(nmodl_path: Path, mod_files: List[Path]) -> None
 def load_nmodl_files(force_reload: bool = False, quiet: bool = False):
     """
     Main function to handle NMODL file setup.
-    
+
     Args:
         force_reload: If True, force recompilation even if mechanisms seem loaded
         quiet: If True, suppress most output messages
     """
-    
+
     def log(message: str):
         if not quiet:
             print(message)
-    
+
     # Check if mechanisms are already loaded by trying to import neuron and check for our mechanisms
     if not force_reload:
         try:
             from neuron import h
+
             # Try to access one of our custom mechanisms to see if it's already loaded
             h.AdExpIF  # This will fail if mechanisms aren't loaded, which is what we want
             log("NMODL mechanisms appear to already be loaded, skipping reload")
@@ -227,7 +230,7 @@ def load_nmodl_files(force_reload: bool = False, quiet: bool = False):
         except Exception as e:
             log(f"Warning: Error checking mechanism status: {e}")
             # Continue with loading attempt
-    
+
     try:
         src_path = Path(__file__).parent.parent / "simulator"
         log(f"Loading NMODL files from {src_path}")
@@ -248,7 +251,9 @@ def load_nmodl_files(force_reload: bool = False, quiet: bool = False):
         if not quiet:
             # Log the error but don't crash the program
             import traceback
+
             traceback.print_exc()
         return False
+
 
 load_nmodl_files()

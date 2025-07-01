@@ -76,20 +76,27 @@ def plot_spike_trains(
     warnings.filterwarnings("ignore", message=".*Font family.*not found.*")
     warnings.filterwarnings("ignore", message=".*findfont.*")
 
-    for spike_pool_idx, (spike_pool, ax) in enumerate(zip(spike_trains__matrix[_pool_to_plot], list(axs))):
+    for spike_pool_idx, (spike_pool, ax) in enumerate(
+        zip(spike_trains__matrix[_pool_to_plot], list(axs))
+    ):
         # Get spike times for each neuron that fires
         spike_times_list = []
         neuron_indices = []
-        
+
         for neuron in range(spike_pool.shape[0]):
-            spike_times = np.where(spike_pool[neuron] == 1)[0] * timestep__ms / 1000  # convert to seconds
+            spike_times = (
+                np.where(spike_pool[neuron] == 1)[0] * timestep__ms / 1000
+            )  # convert to seconds
             if len(spike_times) > 0:
                 spike_times_list.append(spike_times)
                 neuron_indices.append(neuron)
-        
+
         # Sort by first spike time for consistent ordering
         if spike_times_list:
-            first_spike_times = [times[0] if len(times) > 0 else float('inf') for times in spike_times_list]
+            first_spike_times = [
+                times[0] if len(times) > 0 else float("inf")
+                for times in spike_times_list
+            ]
             sorted_indices = np.argsort(first_spike_times)
             spike_times_list = [spike_times_list[i] for i in sorted_indices]
             neuron_indices = [neuron_indices[i] for i in sorted_indices]
@@ -97,7 +104,7 @@ def plot_spike_trains(
         # Define alternating colors
         colors = ["#90b8e0", "#af8bff"]
         plot_colors = [colors[i % 2] for i in range(len(spike_times_list))]
-        
+
         # Use scatter dots for cleaner spike visualization
         if spike_times_list:
             for i, spike_times in enumerate(spike_times_list):
@@ -108,10 +115,10 @@ def plot_spike_trains(
                     s=10,  # dot size
                     alpha=0.8,
                     zorder=1,
-                    edgecolors='none',
-                    **kwargs
+                    edgecolors="none",
+                    **kwargs,
                 )
-        
+
         index = len(spike_times_list) if spike_times_list else 0
 
         if apply_default_formatting:
@@ -150,7 +157,8 @@ def plot_spike_trains(
                 ax2.spines["right"].set_color("black")
                 ax2.set_ylim(0, index + 1)
                 ax2.set_yticks(
-                    np.linspace(0, index + 1, 10) * (pc_max - pc_min) / (index + 1) + pc_min
+                    np.linspace(0, index + 1, 10) * (pc_max - pc_min) / (index + 1)
+                    + pc_min
                 )
                 ax2.set_ylabel("Input Current (nA)")
 
@@ -158,7 +166,12 @@ def plot_spike_trains(
                 ax2.yaxis.label.set_color("black")
 
         if apply_default_formatting:
-            sns.despine(ax=ax, offset=10, trim=True, right=False if pool_current__matrix is not None else True)
+            sns.despine(
+                ax=ax,
+                offset=10,
+                trim=True,
+                right=False if pool_current__matrix is not None else True,
+            )
 
     return axs
 
@@ -174,11 +187,11 @@ def plot_spike_trains_legacy(
 ):
     """
     Legacy function for backward compatibility.
-    
+
     This function maintains the old API for existing code that depends on it.
     For new code, use the new plot_spike_trains function.
     """
-    
+
     if pool_to_plot is None:
         _pool_to_plot = np.arange(spike_trains__matrix.shape[0])
     else:
@@ -191,7 +204,7 @@ def plot_spike_trains_legacy(
     figs = []
     for spike_pool_idx, spike_pool in enumerate(spike_trains__matrix[_pool_to_plot]):
         index = 0
-        
+
         with plt.xkcd():
             plt.rcParams.update({"font.size": 24})
             plt.rcParams.update({"axes.titlesize": 24})
@@ -206,16 +219,21 @@ def plot_spike_trains_legacy(
             # Get spike times for each neuron that fires
             spike_times_list = []
             neuron_indices = []
-            
+
             for neuron in range(spike_pool.shape[0]):
-                spike_times = np.where(spike_pool[neuron] == 1)[0] * 0.05 / 1000  # convert to seconds
+                spike_times = (
+                    np.where(spike_pool[neuron] == 1)[0] * 0.05 / 1000
+                )  # convert to seconds
                 if len(spike_times) > 0:
                     spike_times_list.append(spike_times)
                     neuron_indices.append(neuron)
-            
+
             # Sort by first spike time for consistent ordering
             if spike_times_list:
-                first_spike_times = [times[0] if len(times) > 0 else float('inf') for times in spike_times_list]
+                first_spike_times = [
+                    times[0] if len(times) > 0 else float("inf")
+                    for times in spike_times_list
+                ]
                 sorted_indices = np.argsort(first_spike_times)
                 spike_times_list = [spike_times_list[i] for i in sorted_indices]
                 neuron_indices = [neuron_indices[i] for i in sorted_indices]
@@ -223,7 +241,7 @@ def plot_spike_trains_legacy(
             # Define alternating colors
             colors = ["#90b8e0", "#af8bff"]
             plot_colors = [colors[i % 2] for i in range(len(spike_times_list))]
-            
+
             # Use scatter dots for cleaner spike visualization
             if spike_times_list:
                 for i, spike_times in enumerate(spike_times_list):
@@ -234,7 +252,7 @@ def plot_spike_trains_legacy(
                         s=10,  # dot size
                         alpha=0.8,
                         zorder=1,
-                        edgecolors='none'
+                        edgecolors="none",
                     )
                 index = len(spike_times_list)
 
@@ -271,14 +289,19 @@ def plot_spike_trains_legacy(
                 ax2.spines["right"].set_color("black")
                 ax2.set_ylim(0, index + 1)
                 ax2.set_yticks(
-                    np.linspace(0, index + 1, 10) * (pc_max - pc_min) / (index + 1) + pc_min
+                    np.linspace(0, index + 1, 10) * (pc_max - pc_min) / (index + 1)
+                    + pc_min
                 )
                 ax2.set_ylabel("Input Current (nA)")
 
                 ax2.tick_params(axis="y", colors="black")
                 ax2.yaxis.label.set_color("black")
 
-            sns.despine(offset=10, trim=True, right=False if pool_current__matrix is not None else True)
+            sns.despine(
+                offset=10,
+                trim=True,
+                right=False if pool_current__matrix is not None else True,
+            )
 
             plt.tight_layout()
 

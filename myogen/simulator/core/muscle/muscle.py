@@ -111,7 +111,7 @@ class Muscle:
         If True, automatically executes the complete muscle simulation pipeline:
         innervation electrode_grid_center distribution, muscle fiber generation, and fiber-to-
         motor unit assignment. If False, these steps must be called manually.
-    
+
     Raises
     ------
     ValueError
@@ -332,7 +332,7 @@ class Muscle:
         Assign muscle fibers to motor neurons using biologically realistic principles.
 
         This method implements an assignment algorithm that balances
-        
+
         multiple biological constraints:
             1. Proximity: Fibers closer to innervation centers are more likely to be assigned
             2. Territory size: Each motor unit has a target number of fibers based on its size

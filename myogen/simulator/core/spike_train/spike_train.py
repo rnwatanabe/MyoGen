@@ -159,7 +159,9 @@ class MotorNeuronPool:
         timestep__ms: float = 0.05,
         noise_mean__nA: float = 30,  # noqa N803
         noise_stdev__nA: float = 30,  # noqa N803
-        what_to_record: list[dict[Literal["variables", "to_file",  "sampling_interval", "locations"], Any]] = [
+        what_to_record: list[
+            dict[Literal["variables", "to_file", "sampling_interval", "locations"], Any]
+        ] = [
             {"variables": ["v"], "locations": ["dendrite", "soma"]},
         ],
     ) -> tuple[SPIKE_TRAIN__MATRIX, list[np.ndarray], list[neo.core.segment.Segment]]:

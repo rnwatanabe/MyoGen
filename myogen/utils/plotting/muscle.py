@@ -93,7 +93,7 @@ def plot_innervation_areas_2d(
         # Use a repeating palette of 10 colors
         base_colors = plt.cm.tab10(np.linspace(0, 1, 10))  # type: ignore
         colors = [base_colors[i % 8] for i in range(len(indices_to_plot))]
-        
+
         alphas = np.logspace(np.log10(0.1), np.log10(1.0), len(indices_to_plot))
 
         for i, m in enumerate(indices_to_plot):
@@ -113,7 +113,9 @@ def plot_innervation_areas_2d(
                         zorder=i,
                     )
 
-                ax.scatter(*points.T, color=colors[i], s=15, alpha=alphas[i], zorder=i + 1)
+                ax.scatter(
+                    *points.T, color=colors[i], s=15, alpha=alphas[i], zorder=i + 1
+                )
 
         # Draw muscle border
         ax.plot(
@@ -139,7 +141,7 @@ def plot_innervation_areas_2d(
                     hull_points = np.vstack([hull_points, hull_points[0]])
                     ax.plot(*hull_points.T, **kwargs)
                 ax.scatter(*points.T, **kwargs)
-        
+
         # Draw muscle border
         ax.plot(*muscle_model.muscle_border.T, **kwargs)
 
@@ -186,12 +188,12 @@ def plot_innervation_areas_3d(
         If muscle fiber centers are not 2D
     """
     # Create 3D axis if not provided
-    if not hasattr(ax, 'zaxis'):
+    if not hasattr(ax, "zaxis"):
         # Set clean white style before creating figure
         plt.style.use("default")
         fig = plt.figure(figsize=(12, 10), facecolor="white")
         ax = fig.add_subplot(111, projection="3d")
-        
+
         if apply_default_formatting:
             # Set clean white background and styling for 3D plot
             fig.patch.set_facecolor("white")
@@ -247,7 +249,9 @@ def plot_innervation_areas_3d(
         ax.set_ylabel("y (mm)", fontsize=12)  # type: ignore
         ax.set_zlabel("Motor Unit Index (a. u.)", fontsize=12)  # type: ignore
         ax.set_title(
-            "Motor Neuron Innervation Areas as Stacked Convex Hulls", fontsize=14, pad=20
+            "Motor Neuron Innervation Areas as Stacked Convex Hulls",
+            fontsize=14,
+            pad=20,
         )  # type: ignore
 
         ax.set_box_aspect([1, 1, stretch_factor])  # type: ignore
@@ -304,4 +308,6 @@ def show_innervation_areas_3d(
         plt.style.use("default")
         fig = plt.figure(figsize=(12, 10), facecolor="white")
         ax = fig.add_subplot(111, projection="3d")  # type: ignore
-    return plot_innervation_areas_3d(muscle_model, ax, indices_to_plot, z_spacing, stretch_factor)  # type: ignore
+    return plot_innervation_areas_3d(
+        muscle_model, ax, indices_to_plot, z_spacing, stretch_factor
+    )  # type: ignore

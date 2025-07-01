@@ -72,7 +72,7 @@ class cell_class(sim.MultiCompartmentNeuron):
             "ks": KsChannel,
         }
         self.units = {
-            "v": "mV"   ,
+            "v": "mV",
             "gsyn_exc": "uS",
             "gsyn_inh": "uS",
             "na.m": "dimensionless",

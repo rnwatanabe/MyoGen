@@ -1,4 +1,3 @@
-
 from beartype import beartype
 from beartype.cave import IterableType
 import numpy as np

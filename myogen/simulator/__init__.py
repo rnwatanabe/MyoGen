@@ -8,10 +8,11 @@ NMODL files are automatically loaded when needed.
 import warnings
 from typing import Optional
 
+
 def _ensure_nmodl_loaded() -> bool:
     """
     Ensure NMODL files are loaded, with intelligent fallback logic.
-    
+
     Returns:
         bool: True if NMODL loading was successful or not needed, False if failed
     """
@@ -20,11 +21,13 @@ def _ensure_nmodl_loaded() -> bool:
         from myogen.simulator.core.physiological_distribution import (
             generate_mu_recruitment_thresholds,
         )
+
         return True
     except Exception as first_error:
         # If that fails, try loading NMODL files manually
         try:
             from myogen.utils import setup_myogen
+
             setup_myogen()
 
             return True
@@ -34,9 +37,10 @@ def _ensure_nmodl_loaded() -> bool:
                 f"First error: {first_error}\n"
                 f"Second error: {second_error}\n"
                 f"Please ensure NEURON is properly installed.",
-                UserWarning
+                UserWarning,
             )
             return False
+
 
 # Automatically ensure NMODL is loaded when simulator is imported
 _nmodl_loaded = _ensure_nmodl_loaded()
@@ -62,6 +66,6 @@ else:
     # Provide fallback or limited functionality
     warnings.warn(
         "Some simulator features may not be available due to NMODL loading issues.",
-        UserWarning
+        UserWarning,
     )
     __all__ = []

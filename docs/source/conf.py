@@ -14,9 +14,16 @@ pyproject_data = toml.load(base_dir / "pyproject.toml")
 project_info = pyproject_data["project"]
 
 project = project_info["name"]
-author = ", ".join([f"{a.get('name', '')} ({a.get('email', '')})" for a in project_info.get("authors", [])])
+author = ", ".join(
+    [
+        f"{a.get('name', '')} ({a.get('email', '')})"
+        for a in project_info.get("authors", [])
+    ]
+)
 release = version = project_info["version"]
-copyright = f"2025 - {datetime.now().year}, n-squared lab, FAU Erlangen-Nürnberg, Germany"
+copyright = (
+    f"2025 - {datetime.now().year}, n-squared lab, FAU Erlangen-Nürnberg, Germany"
+)
 
 # Import the main package
 import myogen
@@ -45,7 +52,6 @@ napoleon_type_aliases = {
     "optional": "Optional[Any]",
     "array_like": ":term:`array_like <numpy:array_like>`",
     "dict_like": ":term:`dict-like <mapping>`",
-    
     # NumPy and scientific computing types
     "ndarray": ":class:`numpy.ndarray`",
     "np.ndarray": ":class:`numpy.ndarray`",
@@ -54,7 +60,7 @@ napoleon_type_aliases = {
     "int_array": ":class:`numpy.ndarray`\\[int]",
     "list[np.ndarray]": ":class:`list`\\[:class:`numpy.ndarray`]",
     "list[ndarray]": ":class:`list`\\[:class:`numpy.ndarray`]",
-    "dtype[bool]": ":class:`numpy.dtype`\\[bool]", 
+    "dtype[bool]": ":class:`numpy.dtype`\\[bool]",
     "tuple[int, ...]": ":class:`tuple`\\[int, ...]",
     "ndarray[tuple[int, ...], dtype[bool]]": ":class:`numpy.ndarray`\\[bool]",
     "float | list[float]": ":class:`float` | :class:`list`\\[:class:`float`]",
@@ -67,44 +73,36 @@ napoleon_type_aliases = {
     "list[int]": ":class:`list`\\[:class:`int`]",
     "list[float]": ":class:`list`\\[:class:`float`]",
     "list[str]": ":class:`list`\\[:class:`str`]",
-    
     # MyoGen custom types - link to documentation
     "INPUT_CURRENT__MATRIX": ":data:`~myogen.utils.types.INPUT_CURRENT__MATRIX`",
-    "SPIKE_TRAIN__MATRIX": ":data:`~myogen.utils.types.SPIKE_TRAIN__MATRIX`", 
+    "SPIKE_TRAIN__MATRIX": ":data:`~myogen.utils.types.SPIKE_TRAIN__MATRIX`",
     "MUAP_SHAPE__TENSOR": ":data:`~myogen.utils.types.MUAP_SHAPE__TENSOR`",
     "SURFACE_EMG__TENSOR": ":data:`~myogen.utils.types.SURFACE_EMG__TENSOR`",
     "INPUT_CURRENT__MATRIX | None": ":class:`~myogen.utils.types.INPUT_CURRENT__MATRIX` | :class:`None`",
-    
     # Beartype and Annotated type patterns - map to clean aliases
     "Annotated[ndarray[tuple[int, ...], dtype[bool]], beartype.vale.Is[lambda x: x.ndim == 3]]": ":data:`~myogen.utils.types.SPIKE_TRAIN__MATRIX`",
     "Annotated[npt.NDArray[np.bool_], Is[lambda x: x.ndim == 3]]": ":data:`~myogen.utils.types.SPIKE_TRAIN__MATRIX`",
     "Annotated[npt.NDArray[np.floating], Is[lambda x: x.ndim == 2]]": ":data:`~myogen.utils.types.INPUT_CURRENT__MATRIX`",
     "Annotated[npt.NDArray[np.floating], Is[lambda x: x.ndim == 5]]": ":data:`~myogen.utils.types.SURFACE_EMG__TENSOR`",
-    
-    
     # Matplotlib types
     "Axes": ":class:`matplotlib.axes.Axes`",
     "Figure": ":class:`matplotlib.figure.Figure`",
     "Axes3D": ":class:`mpl_toolkits.mplot3d.axes3d.Axes3D`",
     "IterableType[Axes]": ":class:`beartype.cave.IterableType`\\[:class:`matplotlib.axes.Axes`]",
-    
     # Beartype types
     "IterableType": ":class:`beartype.cave.IterableType`",
-    
     # NeuroML types
     "Segment": ":class:`neuroml.Segment`",
     "list[Segment]": ":class:`list`\\[:class:`neuroml.Segment`]",
     "list[neo.core.segment.Segment]": ":class:`list`\\[:class:`neo.core.segment.Segment`]",
-    
-    # Common union types 
+    # Common union types
     "str_or_path": "str | :class:`pathlib.Path`",
     "float_or_list": "float | list[float]",
     "int_or_list": "int | list[int]",
     "str_or_list": "str | list[str]",
-    
     # Motor unit recruitment model literals
     "fuglevand": "``'fuglevand'``",
-    "deluca": "``'deluca'``", 
+    "deluca": "``'deluca'``",
     "konstantin": "``'konstantin'``",
     "combined": "``'combined'``",
     "RecruitmentMode": "``'fuglevand'`` | ``'deluca'`` | ``'konstantin'`` | ``'combined'``",
@@ -112,17 +110,16 @@ napoleon_type_aliases = {
     "ElectrodeGridDimensions": ":class:`tuple`\\[:class:`int`, :class:`int`]",
     "ElectrodeGridCenterPosition": ":class:`tuple`\\[:class:`float` | :class:`int`, :class:`float` | :class:`int`]",
     "list[ElectrodeGridCenterPosition]": ":class:`list`\\[:class:`tuple`\\[:class:`float` | :class:`int`, :class:`float` | :class:`int`\\]]",
-
     # Simulation and modeling types
     "Muscle": ":class:`~myogen.simulator.Muscle`",
-    "MotorNeuronPool": ":class:`~myogen.simulator.MotorNeuronPool`", 
+    "MotorNeuronPool": ":class:`~myogen.simulator.MotorNeuronPool`",
     "SurfaceEMG": ":class:`~myogen.simulator.SurfaceEMG`",
 }
 
 # MyST-Parser configuration
 myst_enable_extensions = [
     "attrs_inline",
-    "attrs_block", 
+    "attrs_block",
     "colon_fence",
     "deflist",
     "dollarmath",
@@ -161,7 +158,7 @@ autosummary_imported_members = False
 templates_path = ["templates"]
 exclude_patterns = ["Thumbs.db", ".DS_Store"]
 
-pygments_dark_style = "monokai"  
+pygments_dark_style = "monokai"
 
 # HTML theme configuration
 html_theme = "pydata_sphinx_theme"
@@ -224,6 +221,7 @@ suppress_warnings = [
     "config.cache",
     "ref.citation",
 ]
+
 
 def setup(app):
     """Setup function for custom configurations."""
