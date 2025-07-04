@@ -55,12 +55,14 @@ if _nmodl_loaded:
     )
     from myogen.simulator.core.muscle import Muscle
     from myogen.simulator.core.spike_train import MotorNeuronPool
+    from myogen.simulator.core.force import ForceModel
 
     __all__ = [
         "generate_mu_recruitment_thresholds",
         "Muscle",
         "MotorNeuronPool",
         "SurfaceEMG",
+        "ForceModel",
     ]
 else:
     # Provide fallback or limited functionality

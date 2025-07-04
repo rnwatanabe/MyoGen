@@ -138,7 +138,6 @@ class Muscle:
     >>> # Access muscle fiber positions for motor unit 0
     >>> fiber_positions = muscle.resulting_fiber_assignment(0)
     >>> print(f"MU 0 has {len(fiber_positions)} muscle fibers")
-
     """
 
     def __init__(

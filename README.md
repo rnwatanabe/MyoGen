@@ -11,7 +11,7 @@ MyoGen is a biophysical simulation toolkit for generating surface and intramuscu
 
 The toolkit implements a complete simulation pipeline: from motor unit recruitment thresholds and spike train generation using the NEURON simulator, through anatomically accurate muscle modeling with realistic fiber distributions, to surface EMG signal synthesis via Motor Unit Action Potentials (MUAPs). This end-to-end approach enables users to understand and validate EMG processing algorithms, develop new analysis methods, and explore neuromuscular system behavior under various conditions.
 
-Key feautres include:
+Key features include:
 - **Motor Unit Recruitment Modeling**: Four validated models (Fuglevand, De Luca, Konstantin, Combined) for physiologically realistic recruitment patterns
 - **Biophysical Spike Train Simulation**: NEURON-based motor neuron modeling with detailed calcium dynamics and membrane properties  
 - **Anatomically Accurate Muscle Models**: Spatial distribution of motor units and muscle fibers based on anatomical measurements
