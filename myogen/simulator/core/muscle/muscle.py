@@ -155,6 +155,10 @@ class Muscle:
         self.fiber_density__fibers_per_mm2 = fiber_density__fibers_per_mm2
         self.grid_resolution = grid_resolution
 
+        self.innervation_center_positions: np.ndarray | None = None
+        self.mf_centers: np.ndarray | None = None
+        self.assignment: np.ndarray | None = None
+
         # Validate the ratio
         if not (0 < max_innervation_area_to_total_muscle_area__ratio <= 1):
             raise ValueError(
@@ -185,12 +189,54 @@ class Muscle:
             * self.fiber_density__fibers_per_mm2
         ).astype(int)
 
-        self.innervation_center_positions: np.ndarray | None = None
-
         if autorun:
             self.distribute_innervation_centers()
             self.generate_muscle_fiber_centers()
             self.assign_mfs2mns()
+            self._generate_fiber_properties()
+
+    def _generate_fiber_properties(self) -> None:
+        """
+        Generate muscle fiber diameters and conduction velocities based on physiological models.
+
+        This method should be called after generate_muscle_fiber_centers() to generate
+        realistic fiber properties based on the number and positions of muscle fibers.
+        """
+        if self.mf_centers is None:
+            raise ValueError("Muscle fiber centers must be generated first")
+
+        n_fibers = len(self.mf_centers)
+
+        # Generate muscle fiber diameters using log-normal distribution
+        # Based on physiological measurements (Brooke & Kaiser, 1970)
+        # Mean diameter ~50μm, range 20-80μm
+        mean_diameter = 50e-3  # mm (50 μm)
+        std_diameter = 15e-3  # mm (15 μm)
+
+        self.mf_diameters = RANDOM_GENERATOR.lognormal(
+            mean=np.log(mean_diameter), sigma=0.3, size=n_fibers
+        )
+
+        # Ensure diameters are within physiological range (20-80 μm)
+        self.mf_diameters = np.clip(self.mf_diameters, 20e-3, 80e-3)
+
+        # Generate conduction velocities based on fiber diameter
+        # CV = k * diameter + c, where k ≈ 4.5-6.0 (m/s)/mm, c ≈ 0.5-1.0 m/s
+        # Based on Hakansson (1956) and later studies
+        k = 5.5  # (m/s)/mm
+        c = 0.8  # m/s
+
+        # Add some biological variability
+        cv_base = k * (self.mf_diameters * 1000) + c  # Convert mm to m for diameter
+        cv_noise = RANDOM_GENERATOR.normal(0, 0.2, n_fibers)  # 20% CV variation
+
+        self.mf_cv = cv_base + cv_noise
+
+        # Ensure velocities are within physiological range (2-6 m/s)
+        self.mf_cv = np.clip(self.mf_cv, 2.0, 6.0)
+
+        # Convert back to mm/s for consistency with the rest of the code
+        self.mf_cv = self.mf_cv * 1000  # m/s to mm/s
 
     def distribute_innervation_centers(self) -> None:
         """
@@ -604,3 +650,24 @@ class Muscle:
                 for mu in range(self._number_of_neurons)
             ]
         )
+
+    @property
+    def Lmuscle(self) -> float:
+        """
+        Muscle length in mm.
+
+        For circular cross-section muscles, estimate length as 2.5 times the diameter
+        based on typical muscle geometry (Jacobson et al., 1992).
+        """
+        return 2.5 * 2 * self.radius__mm
+
+    @property
+    def sz(self) -> np.ndarray:
+        """
+        Motor unit sizes based on recruitment thresholds.
+
+        Returns the recruitment thresholds as a proxy for motor unit sizes,
+        following the size principle where larger recruitment thresholds
+        correspond to larger motor units.
+        """
+        return self.recruitment_thresholds
