@@ -19,7 +19,7 @@ from tqdm import tqdm
 from myogen import RANDOM_GENERATOR
 from myogen.simulator.core.muscle import Muscle
 from myogen.simulator.core.spike_train import MotorNeuronPool
-from myogen.simulator.core.emg.simulate_fiber import (
+from myogen.simulator.core.emg.surface.simulate_fiber import (
     simulate_fiber,
 )
 from myogen.utils.types import MUAP_SHAPE__TENSOR, SURFACE_EMG__TENSOR

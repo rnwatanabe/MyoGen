@@ -4,6 +4,6 @@ EMG (Electromyography) domain components.
 This module contains EMG simulation classes and functions.
 """
 
-from .surface_emg import SurfaceEMG
+from myogen.simulator.core.emg.surface.surface_emg import SurfaceEMG
 
 __all__ = ["SurfaceEMG"]
