@@ -164,7 +164,7 @@ class MotorNeuronPool:
         ] = [
             {"variables": ["v"], "locations": ["dendrite", "soma"]},
         ],
-    ) -> tuple[SPIKE_TRAIN__MATRIX, list[np.ndarray], list[neo.core.segment.Segment]]:
+    ) -> tuple[SPIKE_TRAIN__MATRIX, list[np.ndarray], list[neo.Segment]]:
         """
         Generate the spike trains for as many neuron pools as input currents there are
 
@@ -270,3 +270,86 @@ class MotorNeuronPool:
         ]
 
         return self.spike_trains, self.active_neuron_indices, self.data
+
+    def compute_mvc_current_threshold(self) -> float:
+        """
+        Computes the minimum current threshold for maximum voluntary contraction
+        using binary search optimization.
+
+        Returns
+        -------
+        float
+            Minimum current threshold in nA needed to activate all neurons
+        """
+
+        def test_current_activates_all_neurons(current_nA: float) -> bool:
+            """Test if a given current activates all neurons in the pool.
+
+            Parameters
+            ----------
+            current_nA : float
+                Current amplitude in nA
+
+            Returns
+            -------
+            bool
+                True if all neurons are activated, False otherwise
+            """
+            # Create short test simulation parameters
+            test_duration_ms = 500  # Short 500ms test
+            test_timestep_ms = 0.5
+            n_timepoints = int(test_duration_ms / test_timestep_ms)
+
+            # Create constant current input for testing
+            test_current = np.full((1, n_timepoints), current_nA)
+
+            # Run short simulation
+            spike_trains, active_neuron_indices, _ = self.generate_spike_trains(
+                input_current__matrix=test_current,
+                timestep__ms=test_timestep_ms,
+                noise_mean__nA=0,  # Reduce noise for more consistent results
+                noise_stdev__nA=0,
+                what_to_record=[],  # Minimal recording for speed
+            )
+
+            # Check if all neurons are active
+            n_total_neurons = len(self.recruitment_thresholds)
+            n_active_neurons = len(active_neuron_indices[0])
+
+            return n_active_neurons == n_total_neurons
+
+        # Binary search for minimum current
+        low_current = 0.0
+        high_current = 1000.0  # Start with reasonable upper bound
+        tolerance = 1.0  # 1 nA tolerance
+
+        # First, find an upper bound that works
+        while not test_current_activates_all_neurons(high_current):
+            high_current *= 2
+            if high_current > 10000:  # Safety limit
+                raise ValueError(
+                    "Could not find current that activates all neurons within reasonable range"
+                )
+
+        # Binary search between low and high
+        while high_current - low_current > tolerance:
+            mid_current = (low_current + high_current) / 2
+
+            if test_current_activates_all_neurons(mid_current):
+                high_current = mid_current
+            else:
+                low_current = mid_current
+
+        return high_current
+
+    @property
+    def mvc_current_threshold(self) -> float:
+        """
+        Property that returns the minimum current threshold for maximum voluntary contraction.
+
+        Returns
+        -------
+        float
+            Minimum current threshold in nA needed to activate all neurons
+        """
+        return self.compute_mvc_current_threshold()

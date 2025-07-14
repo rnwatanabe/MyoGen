@@ -1,9 +1,8 @@
-#%%
-from ast import Tuple, main
 from typing import Optional
 from beartype import beartype
 import numpy as np
 import matplotlib.pyplot as plt
+from tqdm import tqdm
 
 from myogen.utils.types import SPIKE_TRAIN__MATRIX
 
@@ -86,7 +85,7 @@ class ForceModel:
             / self.contraction_times
             * twitch_timelines_reshaped
             * np.exp(1 - twitch_timelines_reshaped / self.contraction_times)
-        ) # referred in [1] as f_i(t) (see eq. 11 and 12)
+        )  # referred in [1] as f_i(t) (see eq. 11 and 12)
 
         # Truncate the twitch to the effective length
         self.twitch_list = [
@@ -98,48 +97,38 @@ class ForceModel:
             )
         ]
 
-    def normalize_mvc(self, spikes: np.ndarray) -> tuple[np.ndarray, float]:
-        """Normalize to maximum voluntary contraction (MVC)."""
-        self.fmax = 1
-        try:
-            mvc_force = self.generate_force_offline(spikes, "MVC measurement:")
-            fmax = np.mean(mvc_force[round(len(mvc_force) / 2) :])
-        except Exception as err:
-            self.fmax = None
-            raise err
+    def generate_force(self, spike_train__matrix: SPIKE_TRAIN__MATRIX) -> np.ndarray:
+        return np.array(
+            [self._generate_force(spike_train.T) for spike_train in spike_train__matrix]
+        )
 
-        self.fmax = fmax
-        mvc_force = mvc_force / self.fmax
-        return mvc_force, fmax
-
-    def generate_force_offline(
-        self, spikes: np.ndarray, prefix: str = ""
-    ) -> np.ndarray:
+    def _generate_force(self, spikes: np.ndarray, prefix: str = "") -> np.ndarray:
         """Generate force offline from spike trains."""
         L = spikes.shape[0]
 
         # IPI signal generation out of spikes signal (for gain nonlinearity)
-        # Note: You'll need to implement sawtooth2ipi and spikes2sawtooth functions
-        extended_spikes = np.vstack([spikes[1:, :], np.zeros((1, self._number_of_neurons))])
-        sawtooth = self.spikes2sawtooth(extended_spikes)
-        _, ipi = self.sawtooth2ipi(sawtooth)
+        _, ipi = self.sawtooth2ipi(
+            self.spikes2sawtooth(
+                np.vstack([spikes[1:], np.zeros((1, self._number_of_neurons))])
+            )
+        )
 
         gain = np.full_like(spikes, np.nan)
         for n in range(self._number_of_neurons):
             gain[:, n] = self.get_gain(ipi[:, n], self.contraction_times[n])
 
         # Generate force
-        force_hfs = np.zeros(L)
-        for n in range(self._number_of_neurons):
+        force = np.zeros(L)
+        for n in tqdm(
+            range(self._number_of_neurons), desc=f"{prefix} Twitch trains are generated"
+        ):
             for t in range(L):
                 if spikes[t, n]:
                     twitch_to_add = self.twitch_list[n]
                     to_take = min(len(twitch_to_add), L - t)
-                    force_hfs[t : t + to_take] += gain[t, n] * twitch_to_add[:to_take]
-            print(f"{prefix} {n + 1} Twitch trains are generated")
+                    force[t : t + to_take] += gain[t, n] * twitch_to_add[:to_take]
 
-
-        return force_hfs
+        return force
 
     def get_gain(self, ipi: np.ndarray, T: float) -> np.ndarray:
         """
@@ -169,27 +158,39 @@ class ForceModel:
         gain[mask] = (Sf(inst_dr[mask]) / inst_dr[mask]) / (Sf(0.4) / 0.4)
 
         return gain
-    
+
     def spikes2sawtooth(
         self, spikes: np.ndarray, initial_values: Optional[np.ndarray] = None
     ) -> np.ndarray:
         """
         Convert spikes to sawtooth signal.
 
+        The sawtooth signal represents inter-pulse intervals (IPIs) where each sawtooth
+        tooth height equals the number of time steps between consecutive spikes. This is
+        used to calculate instantaneous discharge rates for force generation.
+
+        **Sawtooth Sizing:**
+            - Each time step without a spike: sawtooth value increments by 1
+            - When a spike occurs: sawtooth resets to 0
+            - Sawtooth height = IPI in time samples (at recording_frequency__Hz)
+            - Example: height of 50 at 10kHz = 5ms IPI
+
         Parameters:
         -----------
         spikes: np.ndarray
-            Spike train matrix (time x neurons).
+            Spike train matrix (time x neurons). Binary values where 1 indicates a spike.
         initial_values: np.ndarray, optional
-            Initial values for each neuron. Default is ones.
+            Initial values for each neuron. Default is ones. Will be reset to 0 if
+            there's a spike at t=0.
 
         Returns:
         --------
         np.ndarray
-            Sawtooth sequence.
+            Sawtooth sequence where each value represents the time since the last spike
+            in samples. Used for calculating inter-pulse intervals and gain modulation.
         """
         if initial_values is None:
-            initial_values = np.ones(spikes.shape[1])
+            initial_values = np.ones((1, spikes.shape[1]))
 
         l, w = spikes.shape
         seq = np.zeros((l, w))
@@ -198,35 +199,40 @@ class ForceModel:
         initial_values = initial_values * (spikes[0] != 1)
         seq[0] = initial_values
 
-        for i in range(1, l):
-            spike_mask = spikes[i].astype(bool)
-            seq[i] = np.where(spike_mask, 0, seq[i - 1] + 1)
+        for j in range(w):
+            for i in range(1, l):
+                if spikes[i, j] == 1:
+                    seq[i, j] = 0
+                else:
+                    seq[i, j] = seq[i - 1, j] + 1
 
         return seq
 
     def sawtooth2spikes(self, sawtooth: np.ndarray) -> np.ndarray:
         """
         Convert sawtooth signal to spikes.
-        A spike occurs when the sawtooth resets to 0.
+
+        A spike occurs when the sawtooth resets to 0, indicating the end of an
+        inter-pulse interval. This is the inverse operation of spikes2sawtooth.
+
+        **Spike Detection:**
+            - Spike at t=0 if sawtooth starts at 0
+            - Spike when sawtooth decreases (resets from peak back to 0)
+            - Each spike marks the end of one IPI and start of the next
 
         Parameters:
         -----------
         sawtooth: np.ndarray
-            Sawtooth signal matrix.
+            Sawtooth signal matrix where values represent time since last spike.
 
         Returns:
         --------
         np.ndarray
-            Spike train matrix.
+            Spike train matrix with binary values (1 = spike, 0 = no spike).
         """
         spikes = np.zeros_like(sawtooth, dtype=bool)
 
-        # First sample: spike if sawtooth starts at 0
-        spikes[0, :] = sawtooth[0, :] == 0
-
-        # Subsequent samples: spike when sawtooth decreases (resets)
-        for i in range(1, sawtooth.shape[0]):
-            spikes[i, :] = sawtooth[i, :] < sawtooth[i - 1, :]
+        spikes[sawtooth == 0] = 1
 
         return spikes.astype(int)
 
@@ -236,55 +242,48 @@ class ForceModel:
         """
         Convert sawtooth signal to inter-pulse intervals.
 
+        This method converts sawtooth heights (representing time since last spike) into
+        inter-pulse intervals (IPIs) by combining forward and backward spike information.
+        The IPI values are used to calculate instantaneous discharge rates for the
+        Fuglevand gain model.
+
+        **IPI Calculation:**
+        - Forward sawtooth: time since last spike
+        - Backward sawtooth: time until next spike
+        - IPI = forward + backward sawtooth values
+        - IPI represents the full inter-pulse interval in time samples
+        - Convert to physiological units: IPI_ms = IPI_samples / (recording_frequency__Hz / 1000)
+
         Parameters:
         -----------
         sawtooth: np.ndarray
-            Sawtooth signal matrix.
+            Sawtooth signal matrix where values represent time since last spike.
         ipi_saturation: float, optional
-            Maximum IPI value (saturation). Default is infinity.
+            Maximum IPI value (saturation) to prevent infinite values when spikes
+            are far apart. Default is infinity.
 
         Returns:
         --------
         Tuple[np.ndarray, np.ndarray]
-            ipi_filled: IPI signal.
-            ipi_filled_seamless: IPI signal with zeros filled by preceding values.
+            ipi_filled: IPI signal with zeros where no full IPI can be calculated.
+            ipi_filled_seamless: IPI signal with zeros filled by preceding values
+            for smooth gain calculations.
         """
-        # Convert sawtooth to spikes
         spikes = self.sawtooth2spikes(sawtooth)
 
-        # Reverse spikes
-        spikes_reversed = np.flipud(spikes)
-
-        # Convert reversed spikes back to sawtooth with initial value from original sawtooth
-        initial_val = (
-            sawtooth[0, :] if sawtooth.size > 0 else np.zeros(sawtooth.shape[1])
-        )
-        i_sawtooth = self.spikes2sawtooth(spikes_reversed, initial_val)
-
-        # Reverse back
-        i_sawtooth = np.flipud(i_sawtooth)
-
-        # Add to original sawtooth
+        i_sawtooth = self.spikes2sawtooth(spikes[::-1], sawtooth[0])
+        i_sawtooth = i_sawtooth[::-1]
         ipi_filled = sawtooth + i_sawtooth
         ipi_filled = np.minimum(ipi_filled, ipi_saturation)
 
-        # Create seamless version
         ipi_filled_seamless = ipi_filled.copy()
-
-        # Find zeros and replace with preceding values
-        zero_mask = ipi_filled == 0
-        for j in range(ipi_filled.shape[1]):
-            zero_indices = np.where(zero_mask[:, j])[0]
-            for idx in zero_indices:
-                if idx > 0:
-                    ipi_filled_seamless[idx, j] = ipi_filled_seamless[idx - 1, j]
-
+        ipi_filled_seamless[ipi_filled == 0] = ipi_filled_seamless[ipi_filled == 0] - 1
         ipi_filled_seamless = np.minimum(ipi_filled_seamless, ipi_saturation)
 
         return ipi_filled, ipi_filled_seamless
 
-if __name__ == "__main__":
 
+if __name__ == "__main__":
     from myogen import simulator
     from myogen.utils.plotting.force import (
         plot_twitch_parameter_assignment,
@@ -292,12 +291,9 @@ if __name__ == "__main__":
     )
     from myogen.utils.plotting import plot_spike_trains
     from myogen.utils.currents import create_trapezoid_current
-    
-    from matplotlib import interactive
-    interactive(True)
 
     recruitment_thresholds, _ = simulator.generate_mu_recruitment_thresholds(
-        N=100, recruitment_range=50
+        N=100, recruitment_range=25
     )
 
     force_model = ForceModel(
@@ -316,16 +312,16 @@ if __name__ == "__main__":
     plt.tight_layout()
     plt.show()
 
-    simulation_duration__ms = 20000.0  # 2 seconds
-    timestep__ms = 0.1  # 0.1 ms time step
+    simulation_duration__ms = 10000.0  # 1 seconds
+    timestep__ms = 0.05  # 0.1 ms time step
     t_points = int(simulation_duration__ms / timestep__ms)
 
-    trap_amplitudes = [150.0]  # Peak amplitudes
-    trap_rise_times = [5000.0]  # Rise durations (ms)
-    trap_plateau_times = [7000.0]  # Plateau durations (ms)
-    trap_fall_times = [5000.0]  # Fall durations (ms)
-    trap_offsets = [100.0]  # Baseline currents
-    trap_delays = [1000.0]  # Initial delays (ms)
+    trap_amplitudes = [100.0]  # Peak amplitudes
+    trap_rise_times = [1000.0]  # Rise durations (ms)
+    trap_plateau_times = [3000.0]  # Plateau durations (ms)
+    trap_fall_times = [1000.0]  # Fall durations (ms)
+    trap_offsets = [0.0]  # Baseline currents
+    trap_delays = [2500.0]  # Initial delays (ms)
 
     trapezoid_currents = create_trapezoid_current(
         n_pools=1,
@@ -342,8 +338,6 @@ if __name__ == "__main__":
     plt.plot(trapezoid_currents[0])
     plt.show()
 
-    #force_model.normalize_mvc(trapezoid_currents)
-
     motor_neuron_pool = simulator.MotorNeuronPool(recruitment_thresholds)
 
     spike_trains_matrix, active_neuron_indices, data = (
@@ -358,6 +352,9 @@ if __name__ == "__main__":
     plot_spike_trains(spike_trains_matrix, timestep__ms, [plt.gca()])
     plt.show()
 
-    force_hfs = force_model.generate_force_offline(spike_trains_matrix[0].T)
-    plt.plot(force_hfs + np.random.randn(len(force_hfs)) * 0.0005 * np.mean(force_hfs))
+    force_hfs = force_model.generate_force(spike_trains_matrix)
+    plt.plot(
+        force_hfs[0]
+        + np.random.randn(len(force_hfs[0])) * 0.0001 * np.mean(force_hfs[0])
+    )
     plt.show()

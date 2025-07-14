@@ -256,4 +256,4 @@ def load_nmodl_files(force_reload: bool = False, quiet: bool = False):
         return False
 
 
-load_nmodl_files()
+# load_nmodl_files()
