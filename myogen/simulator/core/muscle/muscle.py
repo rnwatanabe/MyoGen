@@ -76,85 +76,124 @@ def _perform_fast_marching(
 
 class Muscle:
     """
-    A muscle model for simulating motor unit organization and muscle fiber distribution.
+    A muscle model based on the cylindrical description of the volume conductor by Farina et al. 2004 [1]_ and the motor unit distribution by Konstantin et al. 2020 [2]_.
 
-    The muscle model consists of:
-        - Motor unit territories with biologically realistic size distributions
-        - Spatially distributed innervation centers using optimal packing algorithms
-        - Muscle fiber assignment based on proximity and self-avoidance principles
+    .. note::
+        All default values are set to simulate the First Dorsal Interosseous (FDI) muscle. Values are pulled from the literature.
 
     Parameters
     ----------
     recruitment_thresholds : np.ndarray
-        Array of recruitment thresholds for each motor unit. The values
-        determine the relative sizes of motor unit territories, with larger
-        values corresponding to larger territories. Typically ranges from
-        -1 to 1, with the largest motor units having thresholds near 1.
-    radius__mm : float, default 4.9
-        Radius of the muscle cross-section in millimeters. Default value
-        corresponds to the First Dorsal Interosseous (FDI) muscle based
-        on anatomical measurements (Jacobson et al., 1992).
-    fiber_density__fibers_per_mm2 : float, default 400
-        Density of muscle fibers per square millimeter. This parameter
-        controls the total number of muscle fibers in the muscle and
-        affects the granularity of the simulation. Values typically
-        range from 300-600 fibers/mm² for human muscles.
-    max_innervation_area_to_total_muscle_area__ratio : float, default 0.25
+        Array of recruitment thresholds for each motor unit (see `myogen.simulator.generate_mu_recruitment_thresholds`).
+        Values range from 0 to 1 with the largest motor units having thresholds near 1.
+    radius__mm : float, default=6.91
+        Radius of the muscle cross-section in millimeters. Default is set to 6.91 mm as determined by Jacobson et al. 1992 [3]_.
+    fiber_density__fibers_per_mm2 : float, default=400
+        Density of muscle fibers per square millimeter. Default is set to 400 fibers/mm² as determined by no one.
+    max_innervation_area_to_total_muscle_area__ratio : float, default=0.25
         Ratio defining the maximum territory size relative to total muscle area.
+        Default is set to 0.25 as determined by no one but it is a good starting point.
         A value of 0.25 means the largest motor unit can innervate up to 25%
-        of the total muscle cross-sectional area. Must be in range (0, 1].
-    grid_resolution : int, default 256
-        Resolution of the computational grid used for innervation electrode_grid_center
-        distribution. Higher values provide more accurate spatial distribution
-        but increase computational cost. Recommended range: 128-512.
-    autorun : bool, default False
-        If True, automatically executes the complete muscle simulation pipeline:
-        innervation electrode_grid_center distribution, muscle fiber generation, and fiber-to-
-        motor unit assignment. If False, these steps must be called manually.
+        of the total muscle cross-sectional area.
+        Must be in range (0, 1].
+    mean_conduction_velocity__m_s : float, default=4.2
+        Mean conduction velocity in m/s. Default is set to 4.2 m/s as determined by Nishizono et al. 1990 [4]_.
+        Experimental range determined by Nishizono et al. 1990 [4]_ is between 3.2 and 5.0 m/s.
+    mean_fiber_length__mm : float, default=31.7
+        Mean fiber length in mm. Default is set to 31.7 mm as determined by Jacobson et al. 1992 [3]_ (Table 1).
+    var_fiber_length__mm : float, default=2.8
+        Fiber length variance in mm. Default is set to 2.8 mm as determined by Jacobson et al. 1992 [3]_ (Table 1).
+    radius_bone__mm : float, default=0
+        Bone radius in mm. Default is set to 0 mm as the FDI muscle doesn't surround a bone.
+    fat_thickness__mm : float, default=0.3
+        Fat thickness in mm. Default is set to 0.3 mm as determined by Störchle et al. 2018 [5]_.
+    skin_thickness__mm : float, default=1.29
+        Skin thickness in mm. Default is set to the male skin thickness average of 1.29 mm as determined by Brodar 1960 [6]_.
+    muscle_conductivity_radial__S_m : float, default=0.09
+        Muscle conductivity in radial direction. Default is set to 0.09 S/m as determined by Botelho et al. 2019 [7]_ (Table 1).
+    muscle_conductivity_longitudinal__S_m : float, default=0.4
+        Muscle conductivity in longitudinal direction. Default is set to 0.4 S/m as determined by Botelho et al. 2019 [7]_ (Table 1).
+    fat_conductivity__S_m : float, default=4.7E-2
+        Fat conductivity. Default is set to 4.7E-2 S/m as determined by Botelho et al. 2019 [7]_ (Table 1).
+    skin_conductivity__S_m : float, default=4.88E-4
+        Skin conductivity. Default is set to 4.88E-4 S/m as determined by Botelho et al. 2019 [7]_ (Table 1).
+    grid_resolution : int, default=256
+        Resolution of the computational grid used for innervation the muscle.
+        Higher values provide more accurate spatial distribution but increase computational cost.
+        Default is set to 256.
+    autorun : bool, default=False
+        If True, automatically executes the complete muscle simulation pipeline: innervation distribution, muscle fiber generation, and fiber-to-motor unit assignment.
+        If False, these steps must be called manually.
 
     Raises
     ------
     ValueError
         If max_innervation_area_to_total_muscle_area__ratio is not in (0, 1].
 
-    Notes
-    -----
-    The muscle model uses a circular cross-section approximation, which is
-    appropriate for many skeletal muscles. The recruitment thresholds are
-    used as a proxy for motor unit sizes, following the size principle
-    where larger motor units have higher recruitment thresholds.
+    References
+    ----------
+    .. [1] Farina, D., Mesin, L., Martina, S., Merletti, R., 2004. A surface EMG generation model with multilayer cylindrical description of the volume conductor. IEEE Transactions on Biomedical Engineering 51, 415–426. https://doi.org/10.1109/TBME.2003.820998
 
-    Examples
-    --------
-    >>> # Create a muscle with 120 motor units
-    >>> recruitment_thresholds = generate_mu_recruitment_thresholds(N=120)
-    >>> muscle = Muscle(
-    ...     recruitment_thresholds=recruitment_thresholds,
-    ...     radius__mm=4.9,
-    ...     fiber_density__fibers_per_mm2=400,
-    ...     autorun=True
-    ... )
-    >>>
-    >>> # Access muscle fiber positions for motor unit 0
-    >>> fiber_positions = muscle.resulting_fiber_assignment(0)
-    >>> print(f"MU 0 has {len(fiber_positions)} muscle fibers")
+    .. [2] Konstantin, A., Yu, T., Le Carpentier, E., Aoustin, Y., Farina, D., 2020. Simulation of Motor Unit Action Potential Recordings From Intramuscular Multichannel Scanning Electrodes. IEEE Transactions on Biomedical Engineering 67, 2005–2014. https://doi.org/10.1109/TBME.2019.2953680
+
+    .. [3] Jacobson, M.D., Raab, R., Fazeli, B.M., Abrams, R.A., Botte, M.J., Lieber, R.L., 1992. Architectural design of the human intrinsic hand muscles. The Journal of Hand Surgery 17, 804–809. https://doi.org/10.1016/0363-5023(92)90446-V
+
+    .. [4] Nishizono, H., Fujimoto, T., Ohtake, H., Miyashita, M., 1990. Muscle fiber conduction velocity and contractile properties estimated from surface electrode arrays. Electroencephalography and Clinical Neurophysiology 75, 75–81. https://doi.org/10.1016/0013-4694(90)90154-C
+
+    .. [5] Störchle, P., Müller, W., Sengeis, M., Lackner, S., Holasek, S., Fürhapter-Rieger, A., 2018. Measurement of mean subcutaneous fat thickness: eight standardised ultrasound sites compared to 216 randomly selected sites. Sci Rep 8, 16268. https://doi.org/10.1038/s41598-018-34213-0
+
+    .. [6] Brodar, V., 1960. Observations on skin thickness and subcutaneous tissue in man. Zeitschrift für Morphologie und Anthropologie 50, 386–395.
+
+    .. [7] Botelho, D.P., Curran, K., Lowery, M.M., 2019. Anatomically accurate model of EMG during index finger flexion and abduction derived from diffusion tensor imaging. PLOS Computational Biology 15, e1007267. https://doi.org/10.1371/journal.pcbi.1007267
     """
 
     def __init__(
         self,
         recruitment_thresholds: np.ndarray,
-        radius__mm: float = 4.9,  # Radius of FDI muscle (Jacobson, 1992)
+        radius__mm: float = 6.91,
         fiber_density__fibers_per_mm2: float = 400,
         max_innervation_area_to_total_muscle_area__ratio: float = 1 / 4,
+        mean_conduction_velocity__m_s: float = 4.2,
+        mean_fiber_length__mm: float = 31.7,
+        var_fiber_length__mm: float = 2.8,
+        radius_bone__mm: float = 0,
+        fat_thickness__mm: float = 0.3,
+        skin_thickness__mm: float = 1.29,
+        muscle_conductivity_radial__S_m=0.09,
+        muscle_conductivity_longitudinal__S_m=0.4,
+        fat_conductivity__S_m=4.7e-2,
+        skin_conductivity__S_m=4.88e-4,
         grid_resolution: int = 256,
         autorun: bool = False,
     ):
-        self.recruitment_thresholds = recruitment_thresholds
-        self._number_of_neurons = len(recruitment_thresholds)
+        # Muscle properties
         self.radius__mm = radius__mm
         self.fiber_density__fibers_per_mm2 = fiber_density__fibers_per_mm2
-        self.grid_resolution = grid_resolution
+        self.max_innervation_area_to_total_muscle_area__ratio = (
+            max_innervation_area_to_total_muscle_area__ratio
+        )
+        self.mean_conduction_velocity__m_s = mean_conduction_velocity__m_s
+        self.mean_fiber_length__mm = mean_fiber_length__mm
+        self.var_fiber_length__mm = var_fiber_length__mm
+        self.radius_bone__mm = radius_bone__mm
+        self.fat_thickness__mm = fat_thickness__mm
+        self.skin_thickness__mm = skin_thickness__mm
+        self.muscle_conductivity_radial__S_m = muscle_conductivity_radial__S_m
+        self.muscle_conductivity_longitudinal__S_m = (
+            muscle_conductivity_longitudinal__S_m
+        )
+        self.fat_conductivity__S_m = fat_conductivity__S_m
+        self.skin_conductivity__S_m = skin_conductivity__S_m
+        self.muscle_area__mm2 = np.pi * np.power(self.radius__mm, 2)
+        self.ma2max_ia = 1 / self.max_innervation_area_to_total_muscle_area__ratio
 
+        # Simulation properties
+        self.recruitment_thresholds = recruitment_thresholds
+        self._number_of_neurons = len(recruitment_thresholds)
+        self.grid_resolution = grid_resolution
+        self.autorun = autorun
+
+        # Simulation results
         self.innervation_center_positions: np.ndarray | None = None
         self.mf_centers: np.ndarray | None = None
         self.assignment: np.ndarray | None = None
@@ -165,23 +204,13 @@ class Muscle:
                 '"max_innervation_area_to_total_muscle_area__ratio" must be in (0, 1].'
             )
 
-        self.max_innervation_area_to_total_muscle_area__ratio = (
-            max_innervation_area_to_total_muscle_area__ratio
-        )
-
-        self.muscle_area__mm2 = np.pi * np.power(self.radius__mm, 2)
-
-        # Calculate innervation areas (same as MATLAB calc_innervation_areas)
-        # Use recruitment_thresholds as motor neuron sizes (equivalent to obj.mn_pool.sz)
-        muscle_area2max_ia = 1 / self.max_innervation_area_to_total_muscle_area__ratio
         self.desired_innervation_areas__mm2 = (
             self.recruitment_thresholds
             / np.max(self.recruitment_thresholds)
             * self.muscle_area__mm2
-            / muscle_area2max_ia
+            / self.ma2max_ia
         )
 
-        # Calculate innervation numbers (same as MATLAB calc_innervation_numbers)
         self.desired_number_of_innervated_fibers = np.round(
             self.desired_innervation_areas__mm2
             / np.sum(self.desired_innervation_areas__mm2)
@@ -240,11 +269,11 @@ class Muscle:
 
     def distribute_innervation_centers(self) -> None:
         """
-        Distribute innervation electrode_grid_center positions using the fast marching method.
+        Distribute innervation center positions using the fast marching method.
 
         This method implements an optimal packing algorithm to distribute motor unit
         innervation centers within the circular muscle cross-section. The algorithm
-        uses the Fast Marching Method to ensure that each new innervation electrode_grid_center is
+        uses the Fast Marching Method to ensure that each new innervation center is
         placed at the location that maximizes the minimum distance to all previously
         placed centers.
 
@@ -310,7 +339,7 @@ class Muscle:
 
     def generate_muscle_fiber_centers(self) -> None:
         """
-        Generate muscle fiber electrode_grid_center positions using a pre-computed Voronoi distribution.
+        Generate muscle fiber center positions using a pre-computed Voronoi distribution.
 
         This method creates the spatial distribution of muscle fiber centers
         within the circular muscle cross-section. The distribution is based on a
@@ -421,12 +450,6 @@ class Muscle:
         The self-avoidance mechanism promotes realistic intermingling by reducing
         the probability of assigning a fiber to a motor unit if its neighbors are
         already assigned to that unit.
-
-        Examples
-        --------
-        >>> muscle.assign_mfs2mns(n_neighbours=4, conf=0.995)
-        >>> assignments = muscle.assignment
-        >>> print(f"Fiber 0 belongs to motor unit {assignments[0]}")
         """
         # Ensure innervation_center_positions is available
         if self.innervation_center_positions is None:
@@ -447,6 +470,7 @@ class Muscle:
         for mu in tqdm(
             range(self._number_of_neurons),
             desc="Calculating out-of-circle coefficients",
+            unit="MU",
         ):
             # Create multivariate normal distribution for this motor unit
             mean = self.innervation_center_positions[mu]
@@ -463,10 +487,9 @@ class Muscle:
                 )
 
             # Use dblquad for integration (equivalent to MATLAB's integral2)
-            result = dblquad(
+            in_circle_int = dblquad(
                 probfun, -self.radius__mm, self.radius__mm, borderfun_neg, borderfun_pos
-            )
-            in_circle_int = result[0]  # dblquad returns (integral, error) or more
+            )[0]  # dblquad returns (integral, error)
             out_circle_coeff[mu] = 1 / in_circle_int
 
         # Find nearest neighbors for suppression (equivalent to MATLAB's knnsearch)
@@ -481,7 +504,9 @@ class Muscle:
         self.assignment = np.full(self.number_of_muscle_fibers, np.nan)
         randomized_mf = RANDOM_GENERATOR.permutation(self.number_of_muscle_fibers)
 
-        for mf in tqdm(randomized_mf, desc="Assigning muscle fibers to motor neurons"):
+        for mf in tqdm(
+            randomized_mf, desc="Assigning muscle fibers to motor neurons", unit="MF"
+        ):
             probs = np.zeros(self._number_of_neurons)
 
             for mu in range(self._number_of_neurons):
@@ -490,7 +515,7 @@ class Muscle:
                 if n_neighbours > 0 and np.any(self.assignment[neighbours[mf]] == mu):
                     probs[mu] = 0
                 else:
-                    # A priori probability of the assignment (same as MATLAB)
+                    # A priori probability of the assignment
                     apriori_prob = (
                         self.desired_number_of_innervated_fibers[mu]
                         / self.number_of_muscle_fibers
@@ -510,6 +535,11 @@ class Muscle:
 
             # Normalize probabilities
             probs = probs / np.sum(probs)
+
+            # should something bad happen with the probabilities, we should not crash
+            probs = np.nan_to_num(probs, nan=0.0)
+            if np.sum(probs) == 0:
+                probs = np.ones(self._number_of_neurons) / self._number_of_neurons
 
             # Sample from the probability distribution (equivalent to MATLAB's randsample)
             self.assignment[mf] = RANDOM_GENERATOR.choice(
@@ -650,24 +680,3 @@ class Muscle:
                 for mu in range(self._number_of_neurons)
             ]
         )
-
-    @property
-    def Lmuscle(self) -> float:
-        """
-        Muscle length in mm.
-
-        For circular cross-section muscles, estimate length as 2.5 times the diameter
-        based on typical muscle geometry (Jacobson et al., 1992).
-        """
-        return 2.5 * 2 * self.radius__mm
-
-    @property
-    def sz(self) -> np.ndarray:
-        """
-        Motor unit sizes based on recruitment thresholds.
-
-        Returns the recruitment thresholds as a proxy for motor unit sizes,
-        following the size principle where larger recruitment thresholds
-        correspond to larger motor units.
-        """
-        return self.recruitment_thresholds
