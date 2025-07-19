@@ -2,13 +2,13 @@
 Force Generation
 ================
 
-After generating **spike trains** from motor neuron pools, the next step is to simulate the **force output** 
-produced by the muscle. **MyoGen** provides a comprehensive force model based on the classic 
+After generating **spike trains** from motor neuron pools, the next step is to simulate the **force output**
+produced by the muscle. **MyoGen** provides a comprehensive force model based on the classic
 Fuglevand et al. (1993) approach.
 
 .. note::
     The **force model** converts spike trains into force by simulating individual motor unit twitches
-    and their summation. Each motor unit has unique twitch characteristics (amplitude, duration) 
+    and their summation. Each motor unit has unique twitch characteristics (amplitude, duration)
     that depend on its recruitment threshold.
 
 The force model includes:
@@ -105,8 +105,12 @@ force_model = ForceModel(
 print(f"\nForce model statistics:")
 print(f"  - Number of motor units: {force_model._number_of_neurons}")
 print(f"  - Recruitment ratio: {force_model._recruitment_ratio:.1f}")
-print(f"  - Peak force range: {force_model.peak_twitch_forces[0]:.3f} - {force_model.peak_twitch_forces[-1]:.3f}")
-print(f"  - Contraction time range: {force_model.contraction_times[0]:.1f} - {force_model.contraction_times[-1]:.1f} samples")
+print(
+    f"  - Peak force range: {force_model.peak_twitch_forces[0]:.3f} - {force_model.peak_twitch_forces[-1]:.3f}"
+)
+print(
+    f"  - Contraction time range: {force_model.contraction_times[0]:.1f} - {force_model.contraction_times[-1]:.1f} samples"
+)
 
 ##############################################################################
 # Visualize Twitch Parameter Assignment
@@ -119,6 +123,7 @@ print(f"  - Contraction time range: {force_model.contraction_times[0]:.1f} - {fo
 # Suppress font warnings to keep output clean
 import warnings
 import logging
+
 warnings.filterwarnings("ignore", message=".*Font family.*not found.*")
 warnings.filterwarnings("ignore", message=".*findfont.*")
 logging.getLogger("matplotlib.font_manager").setLevel(logging.ERROR)
@@ -169,7 +174,7 @@ trapezoid_current = create_trapezoid_current(
 plt.figure(figsize=(12, 4))
 with plt.xkcd():
     time_vector = np.arange(t_points) * timestep__ms / 1000  # Convert to seconds
-    plt.plot(time_vector, trapezoid_current[0], 'g-', linewidth=2)
+    plt.plot(time_vector, trapezoid_current[0], "g-", linewidth=2)
     plt.xlabel("Time (s)")
     plt.ylabel("Current (µV)")
     plt.title("Input Current Waveform")
@@ -231,7 +236,9 @@ force_output = force_model.generate_force(spike_trains_matrix)
 
 # Add some realistic noise to the force signal
 noise_level = 0.015  # 0.5% of mean force
-noisy_force = force_output[0] + np.random.randn(len(force_output[0])) * noise_level * np.mean(force_output[0])
+noisy_force = force_output[0] + np.random.randn(
+    len(force_output[0])
+) * noise_level * np.mean(force_output[0])
 
 ##############################################################################
 # Visualize Force Output
@@ -245,25 +252,29 @@ plt.figure(figsize=(12, 10))
 with plt.xkcd():
     # Plot input current
     ax1 = plt.subplot(3, 1, 1)
-    ax1.plot(time_vector, trapezoid_current[0], 'g-', linewidth=2, label='Input Current')
+    ax1.plot(
+        time_vector, trapezoid_current[0], "g-", linewidth=2, label="Input Current"
+    )
     ax1.set_ylabel("Current (µV)")
     ax1.set_title("Input Current and Force Response")
     ax1.grid(True, alpha=0.3)
     ax1.legend()
     ax1.set_xlim(0, simulation_duration__ms / 1000)
-    
+
     # Plot clean force
     ax2 = plt.subplot(3, 1, 2)
-    ax2.plot(time_vector, force_output[0], 'b-', linewidth=2, label='Clean Force')
+    ax2.plot(time_vector, force_output[0], "b-", linewidth=2, label="Clean Force")
     ax2.set_ylabel("Force (N)")
     ax2.set_title("Simulated Force Output")
     ax2.grid(True, alpha=0.3)
     ax2.legend()
     ax2.set_xlim(0, simulation_duration__ms / 1000)
-    
+
     # Plot noisy force (more realistic)
     ax3 = plt.subplot(3, 1, 3)
-    ax3.plot(time_vector, noisy_force, 'r-', linewidth=1, alpha=0.8, label='Noisy Force')
+    ax3.plot(
+        time_vector, noisy_force, "r-", linewidth=1, alpha=0.8, label="Noisy Force"
+    )
     ax3.set_xlabel("Time (s)")
     ax3.set_ylabel("Force (N)")
     ax3.set_title("Realistic Force Output (with noise)")
