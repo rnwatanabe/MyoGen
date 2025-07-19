@@ -287,8 +287,22 @@ def plot_muap_grid(
             axes_flat: Any = muap_axes
 
         # Calculate global y-limits for consistent scaling across electrodes
-        muap_min = np.min(muap_data[muap_idx])
-        muap_max = np.max(muap_data[muap_idx])
+        # Use nanmin/nanmax to handle NaN values robustly
+        muap_min = np.nanmin(muap_data[muap_idx])
+        muap_max = np.nanmax(muap_data[muap_idx])
+        
+        # Handle edge cases where all values are NaN or min/max are invalid
+        if np.isnan(muap_min) or np.isnan(muap_max) or np.isinf(muap_min) or np.isinf(muap_max):
+            # Fallback to reasonable defaults
+            muap_min, muap_max = -1.0, 1.0
+        elif muap_min == muap_max:
+            # Handle case where all values are identical (avoid zero range)
+            if muap_min == 0:
+                muap_min, muap_max = -0.1, 0.1
+            else:
+                margin = abs(muap_min) * 0.1
+                muap_min -= margin
+                muap_max += margin
 
         # Plot MUAP at each electrode position
         for row_idx in range(n_rows):
