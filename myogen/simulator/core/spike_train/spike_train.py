@@ -1,13 +1,15 @@
+from operator import call
 from typing import Any, Literal
 import numpy as np
 import pyNN.neuron as sim
 from pyNN.neuron.morphology import uniform, centre
 from pyNN.parameters import IonicSpecies
+from pyNN.random import NumpyRNG
 import neo
 
 from myogen import RANDOM_GENERATOR
 from myogen.simulator.core.spike_train import functions, classes
-from myogen.utils.types import SPIKE_TRAIN__MATRIX, INPUT_CURRENT__MATRIX
+from myogen.utils.types import SPIKE_TRAIN__MATRIX, INPUT_CURRENT__MATRIX, CORTICAL_INPUT__MATRIX
 
 
 class MotorNeuronPool:
@@ -155,10 +157,13 @@ class MotorNeuronPool:
 
     def generate_spike_trains(
         self,
-        input_current__matrix: INPUT_CURRENT__MATRIX,
+        input_current__matrix: INPUT_CURRENT__MATRIX = None,
+        cortical_input__matrix: CORTICAL_INPUT__MATRIX = None,
         timestep__ms: float = 0.05,
         noise_mean__nA: float = 30,  # noqa N803
         noise_stdev__nA: float = 30,  # noqa N803
+        CST_number: int = 400,
+        connection_prob: float = 0.3,
         what_to_record: list[
             dict[Literal["variables", "to_file", "sampling_interval", "locations"], Any]
         ] = [
@@ -210,6 +215,19 @@ class MotorNeuronPool:
         self.timestep__ms = timestep__ms
         sim.setup(timestep=self.timestep__ms)
 
+        if input_current__matrix is None and cortical_input__matrix is None:
+            raise ValueError(
+                "Either 'input_current__matrix' or 'cortical_input__matrix' must be provided."
+            )
+        
+        if input_current__matrix is not None:
+            n_pools = input_current__matrix.shape[0]
+            simulation_time_points = input_current__matrix.shape[-1]
+        else:  # cortical_input__matrix is not None
+            n_pools = cortical_input__matrix.shape[0]
+            simulation_time_points = cortical_input__matrix.shape[-1]
+
+
         # Create motor neuron pools
         pools: list[sim.Population] = [
             sim.Population(
@@ -217,27 +235,43 @@ class MotorNeuronPool:
                 self._create_motor_neuron_pool(),
                 initial_values={"v": -70},
             )
-            for _ in range(input_current__matrix.shape[0])
+            for _ in range(n_pools)
         ]
 
-        # Inject currents into each pool - one current per pool
-        self.times = np.arange(input_current__matrix.shape[-1]) * self.timestep__ms
-        for input_current, pool in zip(input_current__matrix, pools):
-            current_source = sim.StepCurrentSource(
-                times=self.times, amplitudes=input_current
-            )
-            current_source.inject_into(pool, location="soma")
 
-            # Add Gaussian noise current to each neuron in the pool
-            for neuron in pool:
-                noise_source = sim.NoisyCurrentSource(
-                    mean=noise_mean__nA,
-                    stdev=noise_stdev__nA,
-                    start=0,
-                    stop=self.times[-1] + self.timestep__ms,
-                    dt=self.timestep__ms,
+        # Inject currents into each pool - one current per pool
+        if input_current__matrix is not None:
+            self.times = np.arange(input_current__matrix.shape[-1]) * self.timestep__ms
+            for input_current, pool in zip(input_current__matrix, pools):
+                current_source = sim.StepCurrentSource(
+                    times=self.times, amplitudes=input_current
                 )
-                noise_source.inject_into([neuron], location="soma")
+                current_source.inject_into(pool, location="soma")
+
+                # Add Gaussian noise current to each neuron in the pool
+                for neuron in pool:
+                    noise_source = sim.NoisyCurrentSource(
+                        mean=noise_mean__nA,
+                        stdev=noise_stdev__nA,
+                        start=0,
+                        stop=self.times[-1] + self.timestep__ms,
+                        dt=self.timestep__ms,
+                    )
+                    noise_source.inject_into([neuron], location="soma")
+
+        callbacks = []
+        projections = []
+        # Create cortical input
+        if cortical_input__matrix is not None:
+            for FR, pool in zip(cortical_input__matrix, pools):
+                spike_source = sim.Population(CST_number, classes.SpikeSourceGammaStart(alpha=1))
+                synapse = sim.StaticSynapse(weight=0.6, delay=0.2)
+                projection =sim.Projection(spike_source, pool,
+                                           sim.FixedProbabilityConnector(connection_prob, location_selector='dendrite', rng=NumpyRNG()),
+                                           synapse, receptor_type="syn")
+                projections.append(projection)
+                callbacks.append(classes.SetRate(spike_source, pool, FR, timestep__ms=self.timestep__ms))
+            
 
         # Set up recording
         for pool in pools:
@@ -246,13 +280,13 @@ class MotorNeuronPool:
                 pool.record(**record)
 
         # Run simulation
-        sim.run(input_current__matrix.shape[-1] * self.timestep__ms)
+        sim.run(simulation_time_points*self.timestep__ms, callbacks=callbacks)
         sim.end()
 
         self.data = [pool.get_data().segments[0] for pool in pools]
 
         # Convert spike times to binary arrays and save
-        self.time_indices = np.arange(input_current__matrix.shape[-1])
+        self.time_indices = np.arange(simulation_time_points)
         self.spike_trains = np.array(
             [
                 [

@@ -204,26 +204,6 @@ class SpikeSourceGammaStart(SpikeSourceGamma):
     # Classe SetRate para alterar a taxa de disparo
 
 
-class SetRate(object):
-    """
-    A callback which changes the firing rate of a population of poisson
-    processes at a fixed interval, based on the forces of the muscle units.
-    """
-
-    def __init__(
-        self, population_source, population_neuron, force_objects, interval=20.0
-    ):
-        self.population_source = population_source
-        self.population_neuron = population_neuron
-        self.force_objects = force_objects
-        self.interval = interval
-
-    def __call__(self, t):
-        total_force = sum(force.F for force in self.force_objects.values())
-        rate = 83 + ((200 - total_force) * 0.01)
-        self.population_source.set(beta=rate)
-
-        return t + self.interval
 
 
 class SetRate(object):
@@ -233,18 +213,17 @@ class SetRate(object):
     """
 
     def __init__(
-        self, population_source, population_neuron, force_objects, interval=20.0, ref=0
-    ):
+        self, population_source, population_neuron, firing_rate, timestep__ms=0.05, interval=20.0):
         self.population_source = population_source
         self.population_neuron = population_neuron
-        self.force_objects = force_objects
+        self.firing_rate = firing_rate
+        self.timestep__ms = timestep__ms
         self.interval = interval
-        self.ref = ref
-        print(f"valor: {self.ref}")
+    
+    
 
     def __call__(self, t):
-        total_force = sum(force.F for force in self.force_objects.values())
-        rate = 83 + ((self.ref - total_force) * 0.01)
+        rate = self.firing_rate[int(t//self.timestep__ms)]
         self.population_source.set(beta=rate)
 
         return t + self.interval
