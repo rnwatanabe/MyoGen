@@ -10,7 +10,6 @@ except ImportError:
 import joblib
 import matplotlib.pyplot as plt
 import numpy as np
-from scipy.signal import resample
 from tqdm import tqdm
 
 from myogen import RANDOM_GENERATOR
@@ -282,6 +281,8 @@ class SurfaceEMG:
                 "MUAP templates have not been generated. Call simulate_muaps() first."
             )
 
+        self.motor_neuron_pool = motor_neuron_pool
+
         # Handle MUs to simulate
         if self.MUs_to_simulate is None:
             MUs_to_simulate = set(
@@ -294,16 +295,37 @@ class SurfaceEMG:
 
         for array_idx, muap_array in enumerate(self.resulting_muaps_arrays):
             # Temporal resampling
-            muap_shapes = np.asarray(
-                resample(
-                    muap_array,
+            muap_shapes = np.zeros(
+                (
+                    muap_array.shape[0],
+                    muap_array.shape[1],
+                    muap_array.shape[2],
                     int(
-                        (muap_array.shape[-1] / self.sampling_frequency__Hz)
-                        // (motor_neuron_pool.timestep__ms / 1000)
+                        muap_array.shape[3]
+                        / self.sampling_frequency__Hz
+                        * 1
+                        / self.motor_neuron_pool.timestep__ms
+                        * 1000
                     ),
-                    axis=-1,
                 )
             )
+
+            for muap_nr in range(muap_shapes.shape[0]):
+                for row in range(muap_shapes.shape[1]):
+                    for col in range(muap_shapes.shape[2]):
+                        muap_shapes[muap_nr, row, col] = np.interp(
+                            np.arange(
+                                0,
+                                muap_array.shape[-1] / self.sampling_frequency__Hz,
+                                self.motor_neuron_pool.timestep__ms / 1000,
+                            ),
+                            np.arange(
+                                0,
+                                muap_array.shape[-1] / self.sampling_frequency__Hz,
+                                1 / self.sampling_frequency__Hz,
+                            ),
+                            muap_array[muap_nr, row, col],
+                        )
 
             n_pools = motor_neuron_pool.spike_trains.shape[0]
             n_rows = muap_shapes.shape[1]
@@ -317,6 +339,8 @@ class SurfaceEMG:
             )
 
             surface_emg = np.zeros((n_pools, n_rows, n_cols, len(sample_conv)))
+
+            muap_shapes /= np.max(np.abs(muap_shapes))  # Normalize MUAP shapes
 
             # Perform convolution for each pool using GPU acceleration if available
             if HAS_CUPY:
@@ -387,7 +411,38 @@ class SurfaceEMG:
                                     convolutions, axis=0
                                 )
 
-            emg_results.append(surface_emg)
+            surface_emg_resampled = np.zeros(
+                (
+                    n_pools,
+                    n_rows,
+                    n_cols,
+                    int(
+                        surface_emg.shape[-1]
+                        / (1 / self.motor_neuron_pool.timestep__ms * 1000)
+                        * self.sampling_frequency__Hz
+                    ),
+                )
+            )
+            for pool_idx in range(n_pools):
+                for row_idx in range(n_rows):
+                    for col_idx in range(n_cols):
+                        surface_emg_resampled[pool_idx, row_idx, col_idx] = np.interp(
+                            np.arange(
+                                0,
+                                surface_emg.shape[-1]
+                                * (self.motor_neuron_pool.timestep__ms / 1000),
+                                1 / self.sampling_frequency__Hz,
+                            ),
+                            np.arange(
+                                0,
+                                surface_emg.shape[-1]
+                                * (self.motor_neuron_pool.timestep__ms / 1000),
+                                self.motor_neuron_pool.timestep__ms / 1000,
+                            ),
+                            surface_emg[pool_idx, row_idx, col_idx],
+                        )
+
+            emg_results.append(surface_emg_resampled)
 
         self.surface_emg__tensors = emg_results
         return emg_results

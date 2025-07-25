@@ -3,10 +3,10 @@ from typing import cast
 import numpy as np
 from beartype import beartype
 
-from myogen.utils.types import INPUT_CURRENT__MATRIX
+from myogen.utils.types import INPUT_CURRENT__MATRIX, beartowertype
 
 
-@beartype
+@beartowertype
 def create_sinusoidal_current(
     n_pools: int,
     t_points: int,
@@ -114,7 +114,7 @@ def create_sinusoidal_current(
     )
 
 
-@beartype
+@beartowertype
 def create_sawtooth_current(
     n_pools: int,
     t_points: int,
@@ -243,7 +243,7 @@ def create_sawtooth_current(
     return input_current__matrix
 
 
-@beartype
+@beartowertype
 def create_step_current(
     n_pools: int,
     t_points: int,
@@ -338,7 +338,7 @@ def create_step_current(
     return input_current__matrix
 
 
-@beartype
+@beartowertype
 def create_ramp_current(
     n_pools: int,
     t_points: int,
@@ -426,7 +426,7 @@ def create_ramp_current(
     return input_current__matrix
 
 
-@beartype
+@beartowertype
 def create_trapezoid_current(
     n_pools: int,
     t_points: int,

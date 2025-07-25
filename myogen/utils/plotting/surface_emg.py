@@ -290,9 +290,14 @@ def plot_muap_grid(
         # Use nanmin/nanmax to handle NaN values robustly
         muap_min = np.nanmin(muap_data[muap_idx])
         muap_max = np.nanmax(muap_data[muap_idx])
-        
+
         # Handle edge cases where all values are NaN or min/max are invalid
-        if np.isnan(muap_min) or np.isnan(muap_max) or np.isinf(muap_min) or np.isinf(muap_max):
+        if (
+            np.isnan(muap_min)
+            or np.isnan(muap_max)
+            or np.isinf(muap_min)
+            or np.isinf(muap_max)
+        ):
             # Fallback to reasonable defaults
             muap_min, muap_max = -1.0, 1.0
         elif muap_min == muap_max:
