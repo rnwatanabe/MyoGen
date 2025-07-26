@@ -61,7 +61,7 @@ def create_sinusoidal_cortical_input(
     CORTICAL_INPUT__MATRIX
         Matrix of shape (n_pools, t_points) containing sinusoidal currents
     """
-    t = np.arange(0, (t_points+1) * timestep__ms, timestep__ms)
+    t = np.arange(0, t_points * timestep__ms, timestep__ms)
 
     # Convert parameters to lists
     amplitudes_list = cast(
@@ -395,9 +395,7 @@ def create_ramp_cortical_input(
     )
     end_fr_list = cast(
         list[float],
-        [end_fr__pps] * n_pools
-        if isinstance(end_fr__pps, float)
-        else end_fr__pps,
+        [end_fr__pps] * n_pools if isinstance(end_fr__pps, float) else end_fr__pps,
     )
     offsets_list = cast(
         list[float],

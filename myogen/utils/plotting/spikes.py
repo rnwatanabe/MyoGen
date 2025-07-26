@@ -11,7 +11,11 @@ from matplotlib.axes import Axes
 from beartype import beartype
 from beartype.cave import IterableType
 
-from myogen.utils.types import INPUT_CURRENT__MATRIX, SPIKE_TRAIN__MATRIX, CORTICAL_INPUT__MATRIX
+from myogen.utils.types import (
+    INPUT_CURRENT__MATRIX,
+    SPIKE_TRAIN__MATRIX,
+    CORTICAL_INPUT__MATRIX,
+)
 
 # Configure multiple sources to suppress font warnings
 logging.getLogger("matplotlib.font_manager").setLevel(logging.ERROR)
@@ -136,7 +140,7 @@ def plot_spike_trains(
 
             pc_min = np.min(pc)
             pc_max = np.max(pc)
-            print(pc_min,pc_max)
+            print(pc_min, pc_max)
             pc_normalized = (pc - pc_min) / (pc_max - pc_min)
             pc_normalized = pc_normalized * (index)
 
@@ -156,13 +160,14 @@ def plot_spike_trains(
 
                 ax2 = ax.twinx()
                 ax2.spines["right"].set_color("black")
-                print('index', index)
+                print("index", index)
                 ax2.set_ylim(0, index + 1)
-                ax2.set_yticks(
-                    np.linspace(0, index + 1, 10)
-                )
+                ax2.set_yticks(np.linspace(0, index + 1, 10))
                 ax2.set_yticklabels(
-                    np.round(np.linspace(0, index + 1, 10) * (pc_max - pc_min) / (index + 1)+pc_min)
+                    np.round(
+                        np.linspace(0, index + 1, 10) * (pc_max - pc_min) / (index + 1)
+                        + pc_min
+                    )
                 )
                 ax2.set_ylabel("Firing rate (pps)")
 

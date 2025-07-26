@@ -9,7 +9,11 @@ import neo
 
 from myogen import RANDOM_GENERATOR
 from myogen.simulator.core.spike_train import functions, classes
-from myogen.utils.types import SPIKE_TRAIN__MATRIX, INPUT_CURRENT__MATRIX, CORTICAL_INPUT__MATRIX
+from myogen.utils.types import (
+    SPIKE_TRAIN__MATRIX,
+    INPUT_CURRENT__MATRIX,
+    CORTICAL_INPUT__MATRIX,
+)
 
 
 class MotorNeuronPool:
@@ -157,8 +161,8 @@ class MotorNeuronPool:
 
     def generate_spike_trains(
         self,
-        input_current__matrix: INPUT_CURRENT__MATRIX = None,
-        cortical_input__matrix: CORTICAL_INPUT__MATRIX = None,
+        input_current__matrix: INPUT_CURRENT__MATRIX | None = None,
+        cortical_input__matrix: CORTICAL_INPUT__MATRIX | None = None,
         timestep__ms: float = 0.05,
         noise_mean__nA: float = 30,  # noqa N803
         noise_stdev__nA: float = 30,  # noqa N803
@@ -178,15 +182,22 @@ class MotorNeuronPool:
 
         Parameters
         ----------
-        input_current__matrix : INPUT_CURRENT__MATRIX
+        input_current__matrix : INPUT_CURRENT__MATRIX, optional
             Matrix of shape (n_pools, t_points) containing current values
             Each row represents the current for one pool
+        cortical_input__matrix : CORTICAL_INPUT__MATRIX, optional
+            Matrix of shape (n_pools, t_points) containing cortical input values
+            Each row represents the cortical input for one pool
         timestep__ms : float
             Simulation timestep__ms in ms
         noise_mean__nA : float
             Mean of the noise current in nA
         noise_stdev__nA : float
             Standard deviation of the noise current in nA
+        CST_number : int
+            Number of neurons in the cortical input population. Only used if cortical_input__matrix is provided. Default is 400.
+        connection_prob : float
+            Probability of a connection between a cortical input neuron and a motor neuron. Only used if cortical_input__matrix is provided. Default is 0.3.
         what_to_record: WhatToRecord
             List of dictionaries specifying what to record.
 
@@ -215,18 +226,16 @@ class MotorNeuronPool:
         self.timestep__ms = timestep__ms
         sim.setup(timestep=self.timestep__ms)
 
-        if input_current__matrix is None and cortical_input__matrix is None:
-            raise ValueError(
-                "Either 'input_current__matrix' or 'cortical_input__matrix' must be provided."
-            )
-        
         if input_current__matrix is not None:
             n_pools = input_current__matrix.shape[0]
             simulation_time_points = input_current__matrix.shape[-1]
-        else:  # cortical_input__matrix is not None
+        elif cortical_input__matrix is not None:
             n_pools = cortical_input__matrix.shape[0]
             simulation_time_points = cortical_input__matrix.shape[-1]
-
+        else:
+            raise ValueError(
+                "Either 'input_current__matrix' or 'cortical_input__matrix' must be provided."
+            )
 
         # Create motor neuron pools
         pools: list[sim.Population] = [
@@ -237,7 +246,6 @@ class MotorNeuronPool:
             )
             for _ in range(n_pools)
         ]
-
 
         # Inject currents into each pool - one current per pool
         if input_current__matrix is not None:
@@ -264,14 +272,28 @@ class MotorNeuronPool:
         # Create cortical input
         if cortical_input__matrix is not None:
             for FR, pool in zip(cortical_input__matrix, pools):
-                spike_source = sim.Population(CST_number, classes.SpikeSourceGammaStart(alpha=1))
+                spike_source = sim.Population(
+                    CST_number, classes.SpikeSourceGammaStart(alpha=1)
+                )
                 synapse = sim.StaticSynapse(weight=0.6, delay=0.2)
-                projection =sim.Projection(spike_source, pool,
-                                           sim.FixedProbabilityConnector(connection_prob, location_selector='dendrite', rng=NumpyRNG()),
-                                           synapse, receptor_type="syn")
+                projection = sim.Projection(
+                    spike_source,
+                    pool,
+                    sim.FixedProbabilityConnector(
+                        connection_prob, location_selector="dendrite", rng=NumpyRNG()
+                    ),
+                    synapse,
+                    receptor_type="syn",
+                )
                 projections.append(projection)
-                callbacks.append(classes.SetRate(spike_source, pool, FR, timestep__ms=self.timestep__ms))
-            
+                callbacks.append(
+                    classes.SetRateFromArray(
+                        population_source=spike_source,
+                        population_neuron=pool,
+                        firing_rate=FR,
+                        timestep__ms=self.timestep__ms,
+                    )
+                )
 
         # Set up recording
         for pool in pools:
@@ -280,7 +302,7 @@ class MotorNeuronPool:
                 pool.record(**record)
 
         # Run simulation
-        sim.run(simulation_time_points*self.timestep__ms, callbacks=callbacks)
+        sim.run(simulation_time_points * self.timestep__ms, callbacks=callbacks)
         sim.end()
 
         self.data = [pool.get_data().segments[0] for pool in pools]

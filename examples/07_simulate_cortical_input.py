@@ -86,9 +86,9 @@ t_points = int(simulation_time / timestep)
 
 # Generate random parameters for each pool's cortical input
 amplitude_range = list(RANDOM_GENERATOR.uniform(20, 80, size=n_pools))
-offsets = list(RANDOM_GENERATOR.uniform(50, 200, size=n_pools))
+offsets = list(RANDOM_GENERATOR.uniform(50, 100, size=n_pools))
 frequencies = list(RANDOM_GENERATOR.uniform(0.5, 10, size=n_pools))
-phases = list(RANDOM_GENERATOR.uniform(0, 2*np.pi, size=n_pools))
+phases = list(RANDOM_GENERATOR.uniform(0, 2 * np.pi, size=n_pools))
 
 CST_number = 400
 connection_prob = 0.3
@@ -114,7 +114,9 @@ cortical_input__matrix = create_sinusoidal_cortical_input(
     phases__rad=phases,
 )
 
-print(f"\nCortical input matrix shape: {cortical_input__matrix.shape}\n amplitude={amplitude_range[i]:.1f} pps \n offset={offsets[i]:.1f} pps\n frequency={frequencies[i]:.1f} Hz\nphase={phases[i]:.1f} rad")
+print(
+    f"\nCortical input matrix shape: {cortical_input__matrix.shape}\n amplitude={amplitude_range[i]:.1f} pps \n offset={offsets[i]:.1f} pps\n frequency={frequencies[i]:.1f} Hz\nphase={phases[i]:.1f} rad"
+)
 
 
 ##############################################################################
@@ -159,11 +161,14 @@ print(f"\nMVC current threshold: {mvc_current_threshold:.1f} nA")
 #
 # The **motor unit spike trains** are simulated using the ``generate_spike_trains`` method of the ``MotorNeuronPool`` object.
 
-spike_trains_matrix, active_neuron_indices, data = motor_neuron_pool.generate_spike_trains(cortical_input__matrix=cortical_input__matrix,
-                                                                                           timestep__ms=timestep,
-                                                                                           CST_number=CST_number,
-                                                                                           connection_prob=connection_prob,
-                                                                                          )
+spike_trains_matrix, active_neuron_indices, data = (
+    motor_neuron_pool.generate_spike_trains(
+        cortical_input__matrix=cortical_input__matrix,
+        timestep__ms=timestep,
+        CST_number=CST_number,
+        connection_prob=connection_prob,
+    )
+)
 
 
 # Save motor neuron pool for later analysis
