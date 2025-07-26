@@ -13,6 +13,31 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+## [0.1.1] - 2025-07-26
+
+### Added
+- Surface electrode array classes (`SurfaceElectrodeArray`) for EMG simulation
+- Numba dependency for performance optimization
+
+### Changed
+- Refactored surface EMG simulation for improved performance and API consistency
+- Updated current creation functions for better usability
+- MUAPs will be min-max scaled when generating surface EMG signals to avoid numerical instability
+- Generated EMG signals will be sampled to the sampling rate of the MUAPs to avoid numerical instability
+- Enhanced Muscle model documentation and updated parameters for improved accuracy
+- Improved simulation scripts readability and updated muscle parameters
+- Updated numpy version requirement to >=1.26 for better compatibility
+- Updated time axis calculation for surface EMG plotting
+- Adapted saved surface EMG data format to work with new API
+
+### Fixed
+- Improved handling of NaN values in MUAP scaling
+- Updated tensor dimensions in type annotations for better type safety
+- Commented out IntramuscularEMG and IntramuscularElectrodeArray imports to resolve import issues
+
+### Removed
+- Unnecessary files cleaned up from repository
+
 ## [0.1.0] - 2025-07-19
 
 ### Added
