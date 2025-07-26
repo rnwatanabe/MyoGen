@@ -37,9 +37,6 @@ import joblib
 import numpy as np
 from matplotlib import pyplot as plt
 
-from myogen.utils import load_nmodl_files
-load_nmodl_files()
-
 from myogen import simulator, RANDOM_GENERATOR
 
 from myogen.utils.currents import create_trapezoid_current

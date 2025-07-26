@@ -25,8 +25,7 @@ from pathlib import Path
 
 import joblib
 
-from myogen.utils import load_nmodl_files
-load_nmodl_files()
+
 from myogen import simulator
 
 ##############################################################################
